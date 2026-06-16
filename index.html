@@ -718,6 +718,20 @@
       return Math.hypot(a.x - b.x, a.y - b.y);
     }
 
+    function distanceToSegment(point, a, b) {
+      const ab = getVector(a, b);
+      const ap = getVector(a, point);
+      const lengthSq = ab.x * ab.x + ab.y * ab.y;
+      if (lengthSq < 0.001) return distance(point, a);
+
+      const t = Math.max(0, Math.min(1, (ap.x * ab.x + ap.y * ab.y) / lengthSq));
+      const nearest = {
+        x: a.x + ab.x * t,
+        y: a.y + ab.y * t
+      };
+      return distance(point, nearest);
+    }
+
     // Der Schatten wird aus der aktuellen Richtung von B zu V gebaut.
     // Er startet am Verteidiger und wird nach hinten breiter.
     function calculateShadowPolygon(ballCarrier, defender, width, length) {
@@ -1161,23 +1175,85 @@
       return blockedByBody || blockedByArms;
     }
 
+    function getActiveDefenderIds() {
+      const ids = ["V"];
+      if (extraDefenderToggle.checked && state.players.V2) {
+        ids.push("V2");
+      }
+      return ids;
+    }
+
+    function evaluatePassToReceiver(receiverId) {
+      const receiver = state.players[receiverId];
+      const ballCarrier = state.players.B;
+      const defenders = getActiveDefenderIds();
+
+      if (isPointInActiveShadow(receiver)) {
+        return {
+          ok: false,
+          defenderId: "V",
+          reason: "shadow"
+        };
+      }
+
+      for (const defenderId of defenders) {
+        const defender = state.players[defenderId];
+        if (distance(defender, receiver) < 92) {
+          return {
+            ok: false,
+            defenderId,
+            reason: "close"
+          };
+        }
+      }
+
+      for (const defenderId of defenders) {
+        const defender = state.players[defenderId];
+        const laneDistance = distanceToSegment(defender, ballCarrier, receiver);
+        const betweenBallAndReceiver =
+          distance(ballCarrier, defender) < distance(ballCarrier, receiver) - 24 &&
+          distance(receiver, defender) < distance(ballCarrier, receiver) - 24;
+
+        if (betweenBallAndReceiver && laneDistance < 46) {
+          return {
+            ok: false,
+            defenderId,
+            reason: "lane"
+          };
+        }
+      }
+
+      return {
+        ok: true,
+        defenderId: null,
+        reason: "free"
+      };
+    }
+
     function choosePassTarget() {
       const teammateIds = ["M"];
       if (thirdAttackerToggle.checked && state.players.M2) {
         teammateIds.push("M2");
       }
-      const freeTeammateId = teammateIds.find((id) => !isPointInActiveShadow(state.players[id]));
+      const evaluations = teammateIds.map((id) => ({
+        id,
+        pass: evaluatePassToReceiver(id)
+      }));
+      const freeTeammate = evaluations.find((entry) => entry.pass.ok);
 
-      if (freeTeammateId) {
+      if (freeTeammate) {
         return {
           result: "free",
-          target: { ...state.players[freeTeammateId] }
+          target: { ...state.players[freeTeammate.id] }
         };
       }
 
+      const firstBlock = evaluations[0]?.pass;
+      const defenderId = firstBlock?.defenderId && state.players[firstBlock.defenderId] ? firstBlock.defenderId : "V";
+
       return {
         result: "blocked",
-        target: { ...state.players.V }
+        target: { ...state.players[defenderId] }
       };
     }
 
