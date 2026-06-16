@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deckungsschatten Taktikboard</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --line: #d7dee9;
+      --field: #287c57;
+      --field-dark: #216748;
+      --blue: #246bfe;
+      --green: #14a96d;
+      --red: #df3f35;
+      --orange: #f59f22;
+      --yellow: #f3c53d;
+      --shadow-body: rgba(245, 143, 35, 0.34);
+      --shadow-arms: rgba(219, 56, 47, 0.22);
+      --radius: 8px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 10px 24px rgba(28, 42, 68, 0.08);
+      overflow: auto;
+      max-height: calc(100vh - 36px);
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      line-height: 1.2;
+      margin: 0 0 8px;
+    }
+
+    .intro {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.96rem;
+    }
+
+    .control-group {
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-group:first-of-type {
+      border-top: 0;
+      padding-top: 4px;
+    }
+
+    label,
+    .label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.91rem;
+      margin-bottom: 7px;
+    }
+
+    select,
+    button,
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select,
+    button {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      font-size: 0.98rem;
+    }
+
+    select {
+      padding: 0 10px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      background: #182238;
+      color: white;
+      border-color: #182238;
+    }
+
+    button:hover {
+      background: #26334f;
+    }
+
+    .button-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .preset-button {
+      min-height: 38px;
+      padding: 8px 10px;
+      text-align: left;
+      color: #26334f;
+      background: #ffffff;
+      border-color: #cfd8e6;
+      font-size: 0.91rem;
+      line-height: 1.2;
+    }
+
+    .preset-button:hover {
+      background: #eef3fb;
+    }
+
+    .preset-button.active {
+      color: white;
+      background: #246bfe;
+      border-color: #246bfe;
+    }
+
+    button.secondary {
+      background: #ffffff;
+      color: #182238;
+      border-color: #b8c3d4;
+    }
+
+    button.secondary:hover {
+      background: #eef3fb;
+    }
+
+    .checks {
+      display: grid;
+      gap: 9px;
+    }
+
+    .field-toggles {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 700;
+      color: #283447;
+    }
+
+    .check-row input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--blue);
+    }
+
+    .field-toggles .check-row {
+      min-height: 34px;
+      padding: 6px 9px;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: 0.86rem;
+    }
+
+    .field-toggles .check-row input {
+      width: 17px;
+      height: 17px;
+    }
+
+    .slider-row {
+      display: grid;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    input[type="range"] {
+      accent-color: var(--blue);
+    }
+
+    details.settings-panel {
+      padding: 0;
+    }
+
+    details.settings-panel summary {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    details.settings-panel summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.settings-panel summary::after {
+      content: "+";
+      width: 24px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      color: white;
+      background: #182238;
+      font-weight: 900;
+    }
+
+    details.settings-panel[open] summary::after {
+      content: "-";
+    }
+
+    .status {
+      display: grid;
+      gap: 10px;
+    }
+
+    .status-pill {
+      width: fit-content;
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: #101522;
+      font-weight: 800;
+      background: var(--yellow);
+    }
+
+    .status-pill.blocked {
+      color: white;
+      background: var(--red);
+    }
+
+    .status-pill.free {
+      color: white;
+      background: var(--green);
+    }
+
+    .pass-length-pill {
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #172033;
+      font-weight: 800;
+      background: #e8eef7;
+    }
+
+    .pass-length-pill.medium {
+      background: #dfe9ff;
+    }
+
+    .pass-length-pill.long {
+      background: #ffe3b4;
+    }
+
+    .copy-box {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+      line-height: 1.42;
+      color: #2c3545;
+      font-size: 0.95rem;
+    }
+
+    .memory {
+      margin: 0;
+      font-weight: 800;
+      color: #172033;
+    }
+
+    .board-wrap {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+    }
+
+    .top-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: #3a4657;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .field-shell {
+      min-height: 560px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid #1f6145;
+      box-shadow: 0 14px 32px rgba(28, 42, 68, 0.13);
+      background: var(--field);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 560px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .field-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.58);
+      stroke-width: 3;
+    }
+
+    .grid-line {
+      stroke: rgba(255, 255, 255, 0.12);
+      stroke-width: 1;
+    }
+
+    .shadow {
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    .shadow.body {
+      fill: var(--shadow-body);
+      stroke: rgba(245, 143, 35, 0.78);
+    }
+
+    .shadow.arms {
+      fill: var(--shadow-arms);
+      stroke: rgba(219, 56, 47, 0.6);
+    }
+
+    .pass-line {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    }
+
+    .hint-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.96);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+    }
+
+    .ghost {
+      fill: rgba(255, 255, 255, 0.75);
+      stroke: #a6f2c8;
+      stroke-width: 4;
+      stroke-dasharray: 6 5;
+    }
+
+    .player {
+      cursor: grab;
+    }
+
+    .player:active {
+      cursor: grabbing;
+    }
+
+    .player circle.main {
+      stroke: rgba(255, 255, 255, 0.95);
+      stroke-width: 5;
+      filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.28));
+    }
+
+    .player text {
+      fill: white;
+      font-size: 27px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    .ball {
+      fill: var(--orange);
+      stroke: rgba(255, 255, 255, 0.95);
+      stroke-width: 3;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+    }
+
+    .ball.blocked {
+      fill: var(--red);
+      stroke: #ffffff;
+    }
+
+    .blast-ring {
+      fill: none;
+      stroke: var(--red);
+      stroke-width: 5;
+    }
+
+    .small-label {
+      fill: rgba(255, 255, 255, 0.94);
+      font-size: 17px;
+      font-weight: 800;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(0, 0, 0, 0.32);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+
+      .sidebar {
+        max-height: none;
+      }
+
+      .field-shell,
+      svg {
+        min-height: 520px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar" aria-label="Steuerung">
+      <h1>Raus aus dem Deckungsschatten</h1>
+      <p class="intro">
+        Der Verteidiger steht zwischen Ball und Mitspieler. Hinter ihm entsteht ein Bereich,
+        in den der Ball schwer gespielt werden kann.
+      </p>
+
+      <section class="control-group">
+        <div class="label">Situation</div>
+        <div id="presetButtons" class="preset-grid"></div>
+      </section>
+
+      <section class="control-group">
+        <div class="button-row">
+          <button id="animateButton" type="button">Szene animieren</button>
+          <button id="exportButton" class="secondary" type="button">Screenshot PNG</button>
+          <button id="resetButton" class="secondary" type="button">Zurücksetzen</button>
+        </div>
+      </section>
+
+      <section class="control-group status">
+        <div class="copy-box" id="presetText"></div>
+        <p class="memory">Raus aus der Linie — rein in den freien Raum.</p>
+      </section>
+
+      <section class="control-group">
+        <details class="settings-panel">
+          <summary>Schatten einstellen</summary>
+          <div class="slider-row">
+            <div class="slider-head"><span>Schattenlänge</span><strong id="lengthValue">520</strong></div>
+            <input id="shadowLength" type="range" min="280" max="760" step="20" value="520">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><span>Körperschattenbreite</span><strong id="bodyWidthValue">34</strong></div>
+            <input id="bodyWidth" type="range" min="18" max="76" step="2" value="34">
+          </div>
+          <div class="slider-row">
+            <div class="slider-head"><span>Armschattenbreite</span><strong id="armWidthValue">86</strong></div>
+            <input id="armWidth" type="range" min="44" max="150" step="2" value="86">
+          </div>
+        </details>
+      </section>
+
+      <section class="control-group status">
+        <div>
+          <div class="label">Aktueller Status</div>
+          <div id="statusPill" class="status-pill">kritisch</div>
+        </div>
+        <div>
+          <div class="label">Passlänge</div>
+          <div id="passLengthPill" class="pass-length-pill">mittel</div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="board-wrap" aria-label="Taktikboard">
+      <div class="top-strip">
+        <div class="legend">
+          <span><i class="dot" style="background: var(--blue)"></i>Angreifer</span>
+          <span><i class="dot" style="background: var(--red)"></i>Verteidiger</span>
+          <span><i class="dot" style="background: var(--orange)"></i>Ball</span>
+          <span><i class="dot" style="background: var(--green)"></i>frei</span>
+        </div>
+        <div class="field-toggles" aria-label="Anzeigeoptionen">
+          <label class="check-row"><input id="bodyShadowToggle" type="checkbox" checked> Körperschatten</label>
+          <label class="check-row"><input id="armShadowToggle" type="checkbox" checked> Armschatten</label>
+          <label class="check-row"><input id="passLineToggle" type="checkbox" checked> Passlinie</label>
+          <label class="check-row"><input id="hintsToggle" type="checkbox" checked> Lösungspfeile</label>
+          <label class="check-row"><input id="extraDefenderToggle" type="checkbox"> 2. Verteidiger</label>
+          <label class="check-row"><input id="thirdAttackerToggle" type="checkbox"> 3. Angreifer</label>
+        </div>
+      </div>
+
+      <div class="field-shell">
+        <svg id="board" viewBox="0 0 1000 650" role="img" aria-label="Spielfeld mit Ballbesitzer, Verteidiger und Mitspieler">
+          <defs>
+            <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+              <path d="M 1 1 L 11 6 L 1 11 z" fill="rgba(255,255,255,0.96)"></path>
+            </marker>
+          </defs>
+
+          <rect width="1000" height="650" fill="var(--field)"></rect>
+          <g id="fieldLines"></g>
+          <g id="shadowLayer"></g>
+          <g id="hintLayer"></g>
+          <g id="passLayer"></g>
+          <g id="playerLayer"></g>
+        </svg>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const board = document.getElementById("board");
+    const fieldLines = document.getElementById("fieldLines");
+    const shadowLayer = document.getElementById("shadowLayer");
+    const hintLayer = document.getElementById("hintLayer");
+    const passLayer = document.getElementById("passLayer");
+    const playerLayer = document.getElementById("playerLayer");
+
+    const presetButtons = document.getElementById("presetButtons");
+    const bodyShadowToggle = document.getElementById("bodyShadowToggle");
+    const armShadowToggle = document.getElementById("armShadowToggle");
+    const passLineToggle = document.getElementById("passLineToggle");
+    const hintsToggle = document.getElementById("hintsToggle");
+    const extraDefenderToggle = document.getElementById("extraDefenderToggle");
+    const thirdAttackerToggle = document.getElementById("thirdAttackerToggle");
+    const animateButton = document.getElementById("animateButton");
+    const exportButton = document.getElementById("exportButton");
+    const resetButton = document.getElementById("resetButton");
+    const statusPill = document.getElementById("statusPill");
+    const passLengthPill = document.getElementById("passLengthPill");
+    const presetText = document.getElementById("presetText");
+
+    const sliders = {
+      shadowLength: document.getElementById("shadowLength"),
+      bodyWidth: document.getElementById("bodyWidth"),
+      armWidth: document.getElementById("armWidth")
+    };
+
+    const sliderValues = {
+      shadowLength: document.getElementById("lengthValue"),
+      bodyWidth: document.getElementById("bodyWidthValue"),
+      armWidth: document.getElementById("armWidthValue")
+    };
+
+    const presets = [
+      {
+        name: "Mitspieler nah hinter dem Verteidiger",
+        text: "Du siehst: M steht direkt hinter V im Schatten. M soll kurz nach links oder rechts laufen.",
+        positions: { B: { x: 230, y: 325 }, V: { x: 500, y: 325 }, M: { x: 610, y: 325 } },
+        arms: true
+      },
+      {
+        name: "Mitspieler weit hinter dem Verteidiger",
+        text: "Du siehst: M steht weit hinten im breiten Schatten. M soll weiter zur Seite laufen.",
+        positions: { B: { x: 180, y: 325 }, V: { x: 430, y: 325 }, M: { x: 790, y: 325 } },
+        arms: true
+      },
+      {
+        name: "Ballbesitzer geht seitlich",
+        text: "Du siehst: B, V und M stehen zuerst fast auf einer Linie. B soll seitlich gehen, damit ein neuer Passwinkel entsteht.",
+        positions: { B: { x: 240, y: 325 }, V: { x: 505, y: 325 }, M: { x: 720, y: 325 } },
+        arms: true
+      },
+      {
+        name: "Mitspieler läuft schnell seitlich raus",
+        text: "Du siehst: M ist noch im Schatten. M soll schnell seitlich herauslaufen und sich anbieten.",
+        positions: { B: { x: 230, y: 325 }, V: { x: 500, y: 325 }, M: { x: 660, y: 375 } },
+        arms: true
+      },
+      {
+        name: "Verteidiger mit ausgestreckten Armen",
+        text: "Du siehst: Die Arme von V machen den Schatten breiter. M soll deutlicher zur Seite laufen.",
+        positions: { B: { x: 240, y: 325 }, V: { x: 505, y: 325 }, M: { x: 690, y: 385 } },
+        arms: true
+      },
+      {
+        name: "Guter Passwinkel",
+        text: "Du siehst: B, V und M stehen nicht mehr auf einer Linie. M soll im freien Raum bleiben und anspielbar sein.",
+        positions: { B: { x: 255, y: 205 }, V: { x: 505, y: 325 }, M: { x: 745, y: 220 } },
+        arms: false
+      }
+    ];
+
+    const state = {
+      currentPreset: 0,
+      players: getPresetPlayers(0),
+      dragged: null,
+      animationFrame: null,
+      passAnimation: null,
+      settings: {
+        shadowLength: Number(sliders.shadowLength.value),
+        bodyWidth: Number(sliders.bodyWidth.value),
+        armWidth: Number(sliders.armWidth.value)
+      }
+    };
+
+    function copyPositions(positions) {
+      const copy = {};
+      for (const [id, point] of Object.entries(positions)) {
+        copy[id] = { ...point };
+      }
+      return copy;
+    }
+
+    function getExtraPositions(basePositions) {
+      return {
+        V2: clampToField({ x: basePositions.V.x + 30, y: basePositions.V.y - 145 }),
+        M2: clampToField({ x: basePositions.M.x - 15, y: basePositions.M.y + 145 })
+      };
+    }
+
+    function getPresetPlayers(index) {
+      const players = copyPositions(presets[index].positions);
+      const extra = getExtraPositions(players);
+      players.V2 = extra.V2;
+      players.M2 = extra.M2;
+      return players;
+    }
+
+    function copySettings(settings) {
+      return {
+        shadowLength: settings.shadowLength,
+        bodyWidth: settings.bodyWidth,
+        armWidth: settings.armWidth
+      };
+    }
+
+    function getVector(from, to) {
+      return { x: to.x - from.x, y: to.y - from.y };
+    }
+
+    function normalize(vector) {
+      const length = Math.hypot(vector.x, vector.y);
+      if (length < 0.001) return { x: 1, y: 0 };
+      return { x: vector.x / length, y: vector.y / length };
+    }
+
+    function add(point, vector) {
+      return { x: point.x + vector.x, y: point.y + vector.y };
+    }
+
+    function scale(vector, amount) {
+      return { x: vector.x * amount, y: vector.y * amount };
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    // Der Schatten wird aus der aktuellen Richtung von B zu V gebaut.
+    // Er startet am Verteidiger und wird nach hinten breiter.
+    function calculateShadowPolygon(ballCarrier, defender, width, length) {
+      const ballToDefender = getVector(ballCarrier, defender);
+      const vectorLength = Math.hypot(ballToDefender.x, ballToDefender.y);
+
+      // Liegen B und V praktisch aufeinander, gibt es keine sinnvolle Richtung
+      // "vom Ball über den Verteidiger". Dann zeichnen wir keinen künstlichen
+      // Schatten in eine feste Ersatzrichtung.
+      if (vectorLength < 1) {
+        return [
+          { ...defender },
+          { ...defender },
+          { ...defender },
+          { ...defender }
+        ];
+      }
+
+      const direction = { x: ballToDefender.x / vectorLength, y: ballToDefender.y / vectorLength };
+      const normal = { x: -direction.y, y: direction.x };
+      const startHalf = width * 0.5;
+      const endHalf = width * 1.7;
+      const endCenter = add(defender, scale(direction, length));
+
+      return [
+        add(defender, scale(normal, -startHalf)),
+        add(defender, scale(normal, startHalf)),
+        add(endCenter, scale(normal, endHalf)),
+        add(endCenter, scale(normal, -endHalf))
+      ];
+    }
+
+    function pointInPolygon(point, polygon) {
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x;
+        const yi = polygon[i].y;
+        const xj = polygon[j].x;
+        const yj = polygon[j].y;
+        const crosses = yi > point.y !== yj > point.y;
+        if (crosses) {
+          const xAtY = ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+          if (point.x < xAtY) inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function calculateStatus() {
+      const bodyPolygon = calculateShadowPolygon(state.players.B, state.players.V, state.settings.bodyWidth, state.settings.shadowLength);
+      const armPolygon = calculateShadowPolygon(state.players.B, state.players.V, state.settings.armWidth, state.settings.shadowLength);
+      const activePolygons = [];
+
+      if (bodyShadowToggle.checked) activePolygons.push(bodyPolygon);
+      if (armShadowToggle.checked) activePolygons.push(armPolygon);
+
+      const inShadow = activePolygons.some((polygon) => pointInPolygon(state.players.M, polygon));
+
+      if (inShadow) {
+        return {
+          key: "blocked",
+          label: "im Deckungsschatten",
+          passText: "geometrisch verdeckt",
+          color: "var(--red)",
+          bodyPolygon,
+          armPolygon
+        };
+      }
+
+      return {
+        key: "free",
+        label: "frei",
+        passText: "Passweg frei",
+        color: "var(--green)",
+        bodyPolygon,
+        armPolygon
+      };
+    }
+
+    function calculatePassLength() {
+      const length = distance(state.players.B, state.players.M);
+
+      if (length < 300) {
+        return { key: "short", label: "kurz" };
+      }
+
+      if (length < 560) {
+        return { key: "medium", label: "mittel" };
+      }
+
+      return { key: "long", label: "lang" };
+    }
+
+    function calculateEscapeHints() {
+      if (distance(state.players.B, state.players.V) < 1) {
+        return [];
+      }
+
+      const direction = normalize(getVector(state.players.B, state.players.V));
+      const normal = { x: -direction.y, y: direction.x };
+      const m = state.players.M;
+      const tryDistances = [80, 120, 165, 215, 270];
+      const hints = [];
+
+      for (const side of [-1, 1]) {
+        for (const step of tryDistances) {
+          const candidate = clampToField(add(m, scale(normal, side * step)));
+          const body = calculateShadowPolygon(state.players.B, state.players.V, state.settings.bodyWidth, state.settings.shadowLength);
+          const arms = calculateShadowPolygon(state.players.B, state.players.V, state.settings.armWidth, state.settings.shadowLength);
+          const blockedByBody = bodyShadowToggle.checked && pointInPolygon(candidate, body);
+          const blockedByArms = armShadowToggle.checked && pointInPolygon(candidate, arms);
+          if (!blockedByBody && !blockedByArms) {
+            hints.push(candidate);
+            break;
+          }
+        }
+      }
+
+      return hints;
+    }
+
+    function clampToField(point) {
+      return {
+        x: Math.max(42, Math.min(958, point.x)),
+        y: Math.max(42, Math.min(608, point.y))
+      };
+    }
+
+    function stopAnimation() {
+      if (state.animationFrame !== null) {
+        cancelAnimationFrame(state.animationFrame);
+        state.animationFrame = null;
+      }
+      state.passAnimation = null;
+      animateButton.textContent = "Szene animieren";
+    }
+
+    function createSvgElement(tag, attrs = {}) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      for (const [key, value] of Object.entries(attrs)) {
+        el.setAttribute(key, value);
+      }
+      return el;
+    }
+
+    function polygonPoints(points) {
+      return points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+    }
+
+    function drawFieldLines() {
+      fieldLines.innerHTML = "";
+
+      for (let x = 100; x < 1000; x += 100) {
+        fieldLines.appendChild(createSvgElement("line", { class: "grid-line", x1: x, y1: 0, x2: x, y2: 650 }));
+      }
+
+      for (let y = 100; y < 650; y += 100) {
+        fieldLines.appendChild(createSvgElement("line", { class: "grid-line", x1: 0, y1: y, x2: 1000, y2: y }));
+      }
+
+      fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 28, width: 944, height: 594, rx: 6 }));
+      fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 500, y1: 28, x2: 500, y2: 622 }));
+      fieldLines.appendChild(createSvgElement("circle", { class: "field-line", cx: 500, cy: 325, r: 82 }));
+      fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 175, width: 150, height: 300 }));
+      fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 822, y: 175, width: 150, height: 300 }));
+      fieldLines.appendChild(createSvgElement("circle", { cx: 55, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
+      fieldLines.appendChild(createSvgElement("circle", { cx: 945, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
+    }
+
+    function render() {
+      const status = calculateStatus();
+      shadowLayer.innerHTML = "";
+      hintLayer.innerHTML = "";
+      passLayer.innerHTML = "";
+      playerLayer.innerHTML = "";
+
+      if (armShadowToggle.checked) {
+        shadowLayer.appendChild(createSvgElement("polygon", {
+          class: "shadow arms",
+          points: polygonPoints(status.armPolygon)
+        }));
+      }
+
+      if (bodyShadowToggle.checked) {
+        shadowLayer.appendChild(createSvgElement("polygon", {
+          class: "shadow body",
+          points: polygonPoints(status.bodyPolygon)
+        }));
+      }
+
+      if (passLineToggle.checked) {
+        passLayer.appendChild(createSvgElement("line", {
+          class: "pass-line",
+          x1: state.players.B.x,
+          y1: state.players.B.y,
+          x2: state.players.M.x,
+          y2: state.players.M.y,
+          stroke: status.color
+        }));
+      }
+
+      if (hintsToggle.checked && status.key === "blocked") {
+        for (const hint of calculateEscapeHints()) {
+          hintLayer.appendChild(createSvgElement("line", {
+            class: "hint-line",
+            x1: state.players.M.x,
+            y1: state.players.M.y,
+            x2: hint.x,
+            y2: hint.y,
+            "marker-end": "url(#arrowHead)"
+          }));
+          hintLayer.appendChild(createSvgElement("circle", {
+            class: "ghost",
+            cx: hint.x,
+            cy: hint.y,
+            r: 21
+          }));
+        }
+      }
+
+      drawPlayer("B", state.players.B, "var(--blue)");
+      drawPlayer("V", state.players.V, "var(--red)");
+      if (extraDefenderToggle.checked) {
+        drawPlayer("V2", state.players.V2, "var(--red)");
+      }
+      drawPlayer("M", state.players.M, "var(--blue)", status.key === "blocked" ? "var(--red)" : "var(--green)");
+      if (thirdAttackerToggle.checked) {
+        const m2Blocked = isPointInActiveShadow(state.players.M2);
+        drawPlayer("M2", state.players.M2, "var(--blue)", m2Blocked ? "var(--red)" : "var(--green)");
+      }
+      drawBall();
+      drawPassImpact();
+      drawLabels(status);
+      updateText(status);
+    }
+
+    function drawPlayer(id, point, color, strokeColor = "rgba(255, 255, 255, 0.95)") {
+      const group = createSvgElement("g", { class: "player", "data-player": id, transform: `translate(${point.x} ${point.y})` });
+      group.appendChild(createSvgElement("circle", { class: "main", r: 31, fill: color, style: `stroke: ${strokeColor}` }));
+      group.appendChild(createSvgElement("text", { x: 0, y: 1 }));
+      group.querySelector("text").textContent = id;
+      group.addEventListener("pointerdown", startDrag);
+      playerLayer.appendChild(group);
+    }
+
+    function drawBall() {
+      const b = state.players.B;
+      const pass = state.passAnimation;
+      const target = pass ? pass.target : null;
+      const progress = pass ? pass.progress : null;
+      const isBlocked = pass && pass.result === "blocked" && progress > 0.82;
+      const cx = progress === null ? b.x + 31 : b.x + (target.x - b.x) * progress;
+      const cy = progress === null ? b.y - 21 : b.y + (target.y - b.y) * progress;
+      playerLayer.appendChild(createSvgElement("circle", {
+        class: isBlocked ? "ball blocked" : "ball",
+        cx,
+        cy,
+        r: 13
+      }));
+    }
+
+    function drawPassImpact() {
+      const pass = state.passAnimation;
+      if (!pass || pass.result !== "blocked" || pass.progress < 1) return;
+
+      const blink = Math.floor(pass.impactProgress * 8) % 2 === 0;
+      const radius = 24 + pass.impactProgress * 30;
+      playerLayer.appendChild(createSvgElement("circle", {
+        class: "blast-ring",
+        cx: pass.target.x,
+        cy: pass.target.y,
+        r: radius,
+        style: `opacity: ${blink ? 0.9 : 0.25}`
+      }));
+      playerLayer.appendChild(createSvgElement("circle", {
+        class: "blast-ring",
+        cx: pass.target.x,
+        cy: pass.target.y,
+        r: Math.max(12, radius - 18),
+        style: `opacity: ${blink ? 0.4 : 0.85}`
+      }));
+    }
+
+    function drawLabels(status) {
+      const midpoint = {
+        x: (state.players.B.x + state.players.M.x) / 2,
+        y: (state.players.B.y + state.players.M.y) / 2 - 18
+      };
+      const label = createSvgElement("text", { class: "small-label", x: midpoint.x, y: midpoint.y });
+      label.textContent = status.passText;
+      playerLayer.appendChild(label);
+    }
+
+    function updateText(status) {
+      const passLength = calculatePassLength();
+      statusPill.textContent = status.label;
+      statusPill.className = `status-pill ${status.key}`;
+      passLengthPill.textContent = passLength.label;
+      passLengthPill.className = `pass-length-pill ${passLength.key}`;
+      presetText.textContent = presets[state.currentPreset].text;
+      updatePresetButtons();
+    }
+
+    function startDrag(event) {
+      stopAnimation();
+      const playerId = event.currentTarget.dataset.player;
+      state.dragged = playerId;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      moveDraggedPlayer(event);
+    }
+
+    function moveDraggedPlayer(event) {
+      if (!state.dragged) return;
+      const point = pointerToSvgPoint(event);
+      state.players[state.dragged] = clampToField(point);
+      render();
+    }
+
+    function endDrag() {
+      state.dragged = null;
+    }
+
+    function pointerToSvgPoint(event) {
+      const ctm = board.getScreenCTM();
+      return {
+        x: (event.clientX - ctm.e) / ctm.a,
+        y: (event.clientY - ctm.f) / ctm.d
+      };
+    }
+
+    function loadPreset(index) {
+      stopAnimation();
+      state.currentPreset = index;
+      state.players = getPresetPlayers(index);
+      armShadowToggle.checked = presets[index].arms;
+      bodyShadowToggle.checked = true;
+      render();
+    }
+
+    function resetToDefaultView() {
+      stopAnimation();
+      sliders.shadowLength.value = "520";
+      sliders.bodyWidth.value = "34";
+      sliders.armWidth.value = "86";
+      passLineToggle.checked = true;
+      hintsToggle.checked = true;
+      extraDefenderToggle.checked = false;
+      thirdAttackerToggle.checked = false;
+      syncSliderValues();
+      loadPreset(0);
+    }
+
+    function getAnimationTarget(index) {
+      const target = copyPositions(getPresetPlayers(index));
+      const settings = copySettings(state.settings);
+
+      if (index === 0) {
+        target.M.y -= 120;
+      } else if (index === 1) {
+        target.M.y += 210;
+      } else if (index === 2) {
+        target.B.y -= 140;
+      } else if (index === 3) {
+        target.M.y -= 175;
+      } else if (index === 4) {
+        settings.armWidth = 140;
+        target.M.y += 125;
+      }
+
+      return {
+        positions: {
+          B: clampToField(target.B),
+          V: clampToField(target.V),
+          M: clampToField(target.M)
+        },
+        settings
+      };
+    }
+
+    function animateScene() {
+      stopAnimation();
+
+      const presetIndex = state.currentPreset;
+      state.players = getPresetPlayers(presetIndex);
+      state.passAnimation = null;
+      armShadowToggle.checked = presets[presetIndex].arms || presetIndex === 4;
+      bodyShadowToggle.checked = true;
+      passLineToggle.checked = true;
+      hintsToggle.checked = true;
+      syncSliderValues();
+
+      const startPositions = copyPositions(state.players);
+      const startSettings = copySettings(state.settings);
+      const target = getAnimationTarget(presetIndex);
+      const duration = 1800;
+      const startTime = performance.now();
+      animateButton.textContent = "Animation läuft";
+
+      function easeInOut(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      }
+
+      function mix(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function step(now) {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = easeInOut(progress);
+
+        for (const id of ["B", "V", "M"]) {
+          state.players[id] = {
+            x: mix(startPositions[id].x, target.positions[id].x, eased),
+            y: mix(startPositions[id].y, target.positions[id].y, eased)
+          };
+        }
+
+        for (const key of Object.keys(sliders)) {
+          state.settings[key] = mix(startSettings[key], target.settings[key], eased);
+          sliders[key].value = String(Math.round(state.settings[key]));
+          sliderValues[key].textContent = String(Math.round(state.settings[key]));
+        }
+
+        render();
+
+        if (progress < 1) {
+          state.animationFrame = requestAnimationFrame(step);
+        } else {
+          startPassAttempt();
+        }
+      }
+
+      state.animationFrame = requestAnimationFrame(step);
+    }
+
+    function isPointInActiveShadow(point) {
+      const bodyPolygon = calculateShadowPolygon(state.players.B, state.players.V, state.settings.bodyWidth, state.settings.shadowLength);
+      const armPolygon = calculateShadowPolygon(state.players.B, state.players.V, state.settings.armWidth, state.settings.shadowLength);
+      const blockedByBody = bodyShadowToggle.checked && pointInPolygon(point, bodyPolygon);
+      const blockedByArms = armShadowToggle.checked && pointInPolygon(point, armPolygon);
+      return blockedByBody || blockedByArms;
+    }
+
+    function choosePassTarget() {
+      const teammateIds = ["M"];
+      if (thirdAttackerToggle.checked && state.players.M2) {
+        teammateIds.push("M2");
+      }
+      const freeTeammateId = teammateIds.find((id) => !isPointInActiveShadow(state.players[id]));
+
+      if (freeTeammateId) {
+        return {
+          result: "free",
+          target: { ...state.players[freeTeammateId] }
+        };
+      }
+
+      return {
+        result: "blocked",
+        target: { ...state.players.V }
+      };
+    }
+
+    function startPassAttempt() {
+      const attempt = choosePassTarget();
+      const passStartTime = performance.now();
+      const flyDuration = 430;
+      const impactDuration = attempt.result === "blocked" ? 620 : 180;
+
+      function passStep(now) {
+        const elapsed = now - passStartTime;
+        const flyProgress = Math.min(1, elapsed / flyDuration);
+        const impactProgress = Math.max(0, Math.min(1, (elapsed - flyDuration) / impactDuration));
+
+        state.passAnimation = {
+          result: attempt.result,
+          target: attempt.target,
+          progress: flyProgress,
+          impactProgress
+        };
+
+        render();
+
+        if (elapsed < flyDuration + impactDuration) {
+          state.animationFrame = requestAnimationFrame(passStep);
+        } else {
+          state.animationFrame = null;
+          state.passAnimation = null;
+          animateButton.textContent = "Szene animieren";
+          render();
+        }
+      }
+
+      state.animationFrame = requestAnimationFrame(passStep);
+    }
+
+    function exportScreenshotPng() {
+      stopAnimation();
+
+      const clone = board.cloneNode(true);
+      clone.setAttribute("width", "1000");
+      clone.setAttribute("height", "650");
+
+      const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+      style.textContent = `
+        .field-line { fill: none; stroke: rgba(255,255,255,0.58); stroke-width: 3; }
+        .grid-line { stroke: rgba(255,255,255,0.12); stroke-width: 1; }
+        .shadow { stroke-width: 2; stroke-linejoin: round; }
+        .shadow.body { fill: rgba(245,143,35,0.34); stroke: rgba(245,143,35,0.78); }
+        .shadow.arms { fill: rgba(219,56,47,0.22); stroke: rgba(219,56,47,0.6); }
+        .pass-line { fill: none; stroke-width: 7; stroke-linecap: round; }
+        .hint-line { fill: none; stroke: rgba(255,255,255,0.96); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+        .ghost { fill: rgba(255,255,255,0.75); stroke: #a6f2c8; stroke-width: 4; stroke-dasharray: 6 5; }
+        .player circle.main { stroke: rgba(255,255,255,0.95); stroke-width: 5; }
+        .player text { fill: white; font: 900 27px Arial, Helvetica, sans-serif; text-anchor: middle; dominant-baseline: central; }
+        .ball { fill: #f59f22; stroke: rgba(255,255,255,0.95); stroke-width: 3; }
+        .small-label { fill: rgba(255,255,255,0.94); font: 800 17px Arial, Helvetica, sans-serif; text-anchor: middle; paint-order: stroke; stroke: rgba(0,0,0,0.32); stroke-width: 4px; stroke-linejoin: round; }
+      `;
+      clone.insertBefore(style, clone.firstChild);
+
+      clone.querySelectorAll('[fill="var(--field)"]').forEach((el) => el.setAttribute("fill", "#287c57"));
+      clone.querySelectorAll('[fill="var(--blue)"]').forEach((el) => el.setAttribute("fill", "#246bfe"));
+      clone.querySelectorAll('[fill="var(--red)"]').forEach((el) => el.setAttribute("fill", "#df3f35"));
+      clone.querySelectorAll('[stroke="var(--red)"]').forEach((el) => el.setAttribute("stroke", "#df3f35"));
+      clone.querySelectorAll('[stroke="var(--green)"]').forEach((el) => el.setAttribute("stroke", "#14a96d"));
+      clone.querySelectorAll("[style]").forEach((el) => {
+        el.setAttribute(
+          "style",
+          el.getAttribute("style")
+            .replaceAll("var(--red)", "#df3f35")
+            .replaceAll("var(--green)", "#14a96d")
+            .replaceAll("var(--blue)", "#246bfe")
+        );
+      });
+
+      const serialized = new XMLSerializer().serializeToString(clone);
+      const svgBlob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      const image = new Image();
+
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1000;
+        canvas.height = 650;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#287c57";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0);
+        URL.revokeObjectURL(url);
+
+        const link = document.createElement("a");
+        link.download = "deckungsschatten-taktikboard.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+
+      image.src = url;
+    }
+
+    function syncSliderValues() {
+      for (const key of Object.keys(sliders)) {
+        state.settings[key] = Number(sliders[key].value);
+        sliderValues[key].textContent = sliders[key].value;
+      }
+    }
+
+    function initControls() {
+      presets.forEach((preset, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "preset-button";
+        button.dataset.preset = String(index);
+        button.textContent = `${index + 1}. ${preset.name}`;
+        button.addEventListener("click", () => loadPreset(index));
+        presetButtons.appendChild(button);
+      });
+
+      animateButton.addEventListener("click", animateScene);
+      exportButton.addEventListener("click", exportScreenshotPng);
+      resetButton.addEventListener("click", resetToDefaultView);
+
+      [bodyShadowToggle, armShadowToggle, passLineToggle, hintsToggle, extraDefenderToggle, thirdAttackerToggle].forEach((input) => {
+        input.addEventListener("change", render);
+      });
+
+      Object.values(sliders).forEach((slider) => {
+        slider.addEventListener("input", () => {
+          stopAnimation();
+          syncSliderValues();
+          render();
+        });
+      });
+    }
+
+    function updatePresetButtons() {
+      presetButtons.querySelectorAll(".preset-button").forEach((button) => {
+        const isActive = Number(button.dataset.preset) === state.currentPreset;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    board.addEventListener("pointermove", moveDraggedPlayer);
+    board.addEventListener("pointerup", endDrag);
+    board.addEventListener("pointercancel", endDrag);
+    board.addEventListener("pointerleave", endDrag);
+
+    drawFieldLines();
+    initControls();
+    syncSliderValues();
+    loadPreset(0);
+  </script>
+</body>
+</html>
