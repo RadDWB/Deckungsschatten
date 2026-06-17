@@ -201,6 +201,18 @@
       transform: translateY(-1px);
     }
 
+    button.sport-button {
+      background: #246bfe;
+      border-color: #246bfe;
+      box-shadow: 0 8px 18px rgba(36, 107, 254, 0.2);
+    }
+
+    button.sport-button:hover {
+      background: #1f55cc;
+      border-color: #1f55cc;
+      box-shadow: 0 13px 28px rgba(36, 107, 254, 0.3);
+    }
+
     .checks {
       display: grid;
       gap: 9px;
@@ -418,9 +430,25 @@
       margin: 0 0 12px;
     }
 
+    .modal-body h3 {
+      margin: 18px 0 8px;
+      color: #172033;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .modal-body h3:first-child {
+      margin-top: 0;
+    }
+
     .modal-body ol {
       margin: 0 0 14px;
       padding-left: 1.35rem;
+    }
+
+    .modal-body ul {
+      margin: 0 0 14px;
+      padding-left: 1.25rem;
     }
 
     .modal-body li {
@@ -695,6 +723,7 @@
         in den der Ball schwer gespielt werden kann.
       </p>
       <button id="didacticButton" class="link-button" type="button">Didaktischer Kommentar</button>
+      <button id="sportCommentButton" class="link-button sport-button" type="button">Sportfachlicher Kommentar</button>
 
       <section class="control-group">
         <div class="label">Situation</div>
@@ -856,6 +885,99 @@
     </section>
   </div>
 
+  <div id="sportCommentOverlay" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="sportCommentTitle">
+      <div class="modal-header">
+        <h2 id="sportCommentTitle">Sportfachlicher Kommentar</h2>
+        <button id="closeSportCommentButton" class="close-button" type="button" aria-label="Sportfachlichen Kommentar schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <h3>Grundidee des Deckungsschattens</h3>
+        <p>
+          Der Deckungsschatten beschreibt den Raum hinter einem Verteidiger aus Sicht des Ballbesitzers.
+          Stehen Ball, Verteidiger und Mitspieler fast auf einer Linie, wird ein direkter Pass nicht nur
+          technisch schwerer, sondern taktisch riskant: Der Verteidiger kann den Ball abfangen, berühren
+          oder den Empfänger sofort unter Druck setzen.
+        </p>
+        <p>
+          Entscheidend ist deshalb nicht nur die Entfernung. Fachlich wichtiger sind Passwinkel, Sichtlinie,
+          Körperstellung, Zeitdruck und die Frage, ob nach der Ballannahme eine sinnvolle Anschlussaktion
+          möglich bleibt.
+        </p>
+
+        <h3>Was ist ein freier Spieler?</h3>
+        <p>
+          Frei ist ein Spieler nicht schon deshalb, weil kein Gegner direkt neben ihm steht. Frei ist er,
+          wenn der Ball realistisch zu ihm gespielt werden kann und er ihn kontrolliert verarbeiten kann.
+        </p>
+        <ul>
+          <li>Die Passlinie ist nicht durch einen Verteidiger blockiert.</li>
+          <li>Der Empfänger steht nicht tief im Deckungsschatten.</li>
+          <li>Die Annahmezone ist nicht sofort durch einen Gegner besetzt.</li>
+          <li>Nach der Annahme gibt es eine Anschlussaktion: weiterpassen, dribbeln, werfen oder abschließen.</li>
+        </ul>
+
+        <h3>Fachliche Logik des Freilaufens</h3>
+        <p>
+          Freilaufen heißt, aus der Linie Ball-Verteidiger-Mitspieler herauszutreten und einen neuen
+          Passwinkel herzustellen. Der Mitspieler bietet sich seitlich, diagonal oder in die Tiefe an.
+          Gleichzeitig kann auch der Ballbesitzer durch seitliches Andribbeln den Winkel verändern.
+        </p>
+        <p>
+          Dadurch entsteht aus einer blockierten Linie ein Dreieck. Dieses Dreieck ist sportfachlich
+          entscheidend: Es öffnet eine Passlinie, zwingt den Verteidiger zu einer Entscheidung und gibt dem
+          Empfänger mehr Zeit für die erste Ballaktion.
+        </p>
+
+        <h3>Bogenlampe, Wurf oder Pass über den Gegner</h3>
+        <p>
+          Ein hoher Ball über den Verteidiger ist keine automatische Lösung. Er ergibt Sinn, wenn der
+          flache Passweg blockiert ist, hinter oder seitlich neben dem Verteidiger aber tatsächlich Raum
+          frei ist und der Empfänger in diesen Raum hineinlaufen kann. Dann wird der Gegner überspielt,
+          ohne dass die Landezone schon unter Druck steht.
+        </p>
+        <p>
+          Gefährlich wird die Bogenlampe, wenn sie zu langsam, zu niedrig oder zu lang ist. Dann hat der
+          Verteidiger Zeit, die Flugbahn zu erreichen, oder ein zweiter Verteidiger kann die Annahmezone
+          schließen. In der App bedeutet grün: sinnvoller hoher Pass. Gelb bedeutet: nur mit Vorsicht,
+          etwa wegen langer Flugzeit, knapper Flugbahn oder weil ein Flachpass eigentlich besser wäre.
+          Rot bedeutet: abfangbar oder Landezone besetzt.
+        </p>
+
+        <h3>Sportartspezifische Einordnung</h3>
+        <ul>
+          <li>
+            Im Fußball ist ein Chip- oder Lupferpass vor allem dann sinnvoll, wenn der Empfänger in freien
+            Raum startet. Ein stehender Mitspieler direkt hinter dem Verteidiger bleibt meist schlecht
+            anspielbar.
+          </li>
+          <li>
+            Im Handball können hohe oder seitliche Zuspiele gegen Arme und Block helfen, sind aber
+            riskant, wenn der Kreisläufer oder Außen sofort bedrängt wird. Häufig ist ein besserer Winkel
+            wertvoller als ein höherer Pass.
+          </li>
+          <li>
+            Im Basketball sind Lob, Entry Pass oder Backdoor-Anspiel nur gut, wenn Timing, Abstand und
+            Landezone passen. Ein Wurf über den Verteidiger ist meist nur sinnvoll bei klarem Vorteil:
+            freier Blick, hoher Abwurfpunkt, Mismatch, Zeitdruck oder geübter Wurf aus dieser Position.
+          </li>
+        </ul>
+
+        <h3>Entscheidungsregel</h3>
+        <ol>
+          <li>Ist der flache Passweg frei?</li>
+          <li>Wenn nicht: Kann ein Spieler durch Freilaufen oder Andribbeln einen neuen Winkel schaffen?</li>
+          <li>Wenn nicht: Ist der hohe Ball schnell genug und ist die Landezone frei?</li>
+          <li>Wenn auch das nicht passt: nicht erzwingen, sondern neu anbieten oder Spiel verlagern.</li>
+        </ol>
+        <p class="modal-note">
+          Fachlicher Merksatz: Frei ist nicht der Spieler ohne Gegenspieler, sondern der Spieler mit
+          passbarer Linie, kontrollierbarer Annahme und sinnvoller Anschlussaktion.
+        </p>
+      </div>
+    </section>
+  </div>
+
   <script>
     "use strict";
 
@@ -879,8 +1001,11 @@
     const passButton = document.getElementById("passButton");
     const animateButton = document.getElementById("animateButton");
     const didacticButton = document.getElementById("didacticButton");
+    const sportCommentButton = document.getElementById("sportCommentButton");
     const didacticOverlay = document.getElementById("didacticOverlay");
+    const sportCommentOverlay = document.getElementById("sportCommentOverlay");
     const closeDidacticButton = document.getElementById("closeDidacticButton");
+    const closeSportCommentButton = document.getElementById("closeSportCommentButton");
     const exportButton = document.getElementById("exportButton");
     const resetButton = document.getElementById("resetButton");
     const statusPill = document.getElementById("statusPill");
@@ -1648,6 +1773,16 @@
       didacticButton.focus();
     }
 
+    function openSportCommentOverlay() {
+      sportCommentOverlay.hidden = false;
+      closeSportCommentButton.focus();
+    }
+
+    function closeSportCommentOverlay() {
+      sportCommentOverlay.hidden = true;
+      sportCommentButton.focus();
+    }
+
     function getAnimationTarget(index) {
       const target = copyPositions(getPresetPlayers(index));
       const settings = copySettings(state.settings);
@@ -1991,10 +2126,17 @@
       });
       animateButton.addEventListener("click", animateScene);
       didacticButton.addEventListener("click", openDidacticOverlay);
+      sportCommentButton.addEventListener("click", openSportCommentOverlay);
       closeDidacticButton.addEventListener("click", closeDidacticOverlay);
+      closeSportCommentButton.addEventListener("click", closeSportCommentOverlay);
       didacticOverlay.addEventListener("click", (event) => {
         if (event.target === didacticOverlay) {
           closeDidacticOverlay();
+        }
+      });
+      sportCommentOverlay.addEventListener("click", (event) => {
+        if (event.target === sportCommentOverlay) {
+          closeSportCommentOverlay();
         }
       });
       exportButton.addEventListener("click", exportScreenshotPng);
@@ -2026,8 +2168,16 @@
     board.addEventListener("pointercancel", endDrag);
     board.addEventListener("pointerleave", endDrag);
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !didacticOverlay.hidden) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (!didacticOverlay.hidden) {
         closeDidacticOverlay();
+      }
+
+      if (!sportCommentOverlay.hidden) {
+        closeSportCommentOverlay();
       }
     });
 
