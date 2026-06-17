@@ -1110,7 +1110,7 @@
         name: "Guter Passwinkel",
         text: "Du siehst: B, V und M stehen nicht mehr auf einer Linie. M soll im freien Raum bleiben und anspielbar sein.",
         positions: { B: { x: 255, y: 205 }, V: { x: 505, y: 325 }, M: { x: 745, y: 220 } },
-        arms: false
+        arms: true
       },
       {
         name: "Deckungsschatten über Eck austricksen",
@@ -1654,6 +1654,7 @@
 
     function drawPassPreview(status) {
       if (state.passMode === "bounce") {
+        const bouncePass = evaluateBouncePass();
         passLayer.appendChild(createSvgElement("line", {
           class: "pass-line blocked-preview",
           x1: state.players.B.x,
@@ -1665,12 +1666,21 @@
           class: "pass-line bounce-preview",
           points: polygonPoints([state.players.B, state.players.M2, state.players.M])
         }));
+        if (!bouncePass.ok) {
+          passLayer.appendChild(createSvgElement("line", {
+            class: "pass-line blocked-preview",
+            x1: bouncePass.blockedSegment.from.x,
+            y1: bouncePass.blockedSegment.from.y,
+            x2: bouncePass.blockedSegment.to.x,
+            y2: bouncePass.blockedSegment.to.y
+          }));
+        }
         passLayer.appendChild(createSvgElement("text", {
           class: "small-label",
           x: state.players.M2.x,
           y: Math.max(62, state.players.M2.y - 46)
         }));
-        passLayer.lastChild.textContent = "über Eck frei";
+        passLayer.lastChild.textContent = bouncePass.ok ? "über Eck frei" : "Passweg zu";
         return;
       }
 
@@ -1858,6 +1868,10 @@
       if (state.passMode === "bounce") {
         state.passMode = "flat";
         syncPassModeButtons();
+      }
+
+      if (index === 5) {
+        armShadowToggle.checked = true;
       }
 
       state.players = getPresetPlayers(index);
@@ -2051,16 +2065,15 @@
       return ids;
     }
 
-    function getPassLaneBlocker(receiver) {
-      const ballCarrier = state.players.B;
-      const passLength = distance(ballCarrier, receiver);
+    function getSegmentLaneBlocker(from, to) {
+      const passLength = distance(from, to);
 
       for (const defenderId of getActiveDefenderIds()) {
         const defender = state.players[defenderId];
-        const laneDistance = distanceToSegment(defender, ballCarrier, receiver);
+        const laneDistance = distanceToSegment(defender, from, to);
         const betweenBallAndReceiver =
-          distance(ballCarrier, defender) < passLength - 24 &&
-          distance(receiver, defender) < passLength - 24;
+          distance(from, defender) < passLength - 24 &&
+          distance(to, defender) < passLength - 24;
 
         if (betweenBallAndReceiver && laneDistance < 46) {
           return { id: defenderId, point: defender };
@@ -2068,6 +2081,40 @@
       }
 
       return null;
+    }
+
+    function getPassLaneBlocker(receiver) {
+      return getSegmentLaneBlocker(state.players.B, receiver);
+    }
+
+    function evaluateBouncePass() {
+      const route = [
+        { ...state.players.B },
+        { ...state.players.M2 },
+        { ...state.players.M }
+      ];
+
+      for (let i = 0; i < route.length - 1; i++) {
+        const from = route[i];
+        const to = route[i + 1];
+        const blocker = getSegmentLaneBlocker(from, to);
+
+        if (blocker) {
+          return {
+            ok: false,
+            target: { ...blocker.point },
+            route: [...route.slice(0, i + 1), { ...blocker.point }],
+            blockedSegment: { from, to },
+            blocker
+          };
+        }
+      }
+
+      return {
+        ok: true,
+        target: { ...state.players.M },
+        route
+      };
     }
 
     function getReceiverSpaceScore(receiver) {
@@ -2124,14 +2171,11 @@
 
     function choosePassTarget() {
       if (state.passMode === "bounce") {
+        const bouncePass = evaluateBouncePass();
         return {
-          result: "free",
-          target: { ...state.players.M },
-          route: [
-            { ...state.players.B },
-            { ...state.players.M2 },
-            { ...state.players.M }
-          ],
+          result: bouncePass.ok ? "free" : "failed",
+          target: bouncePass.target,
+          route: bouncePass.route,
           mode: "bounce"
         };
       }
