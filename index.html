@@ -299,6 +299,10 @@
       display: grid;
       gap: 5px;
       margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #dfe6f1;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.78);
     }
 
     .slider-head {
@@ -314,7 +318,11 @@
     }
 
     details.settings-panel {
-      padding: 0;
+      padding: 10px;
+      border: 1px solid #c5d2e4;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
     details.settings-panel summary {
@@ -326,6 +334,7 @@
       cursor: pointer;
       font-weight: 800;
       list-style: none;
+      color: #172033;
     }
 
     details.settings-panel summary::-webkit-details-marker {
@@ -346,6 +355,11 @@
 
     details.settings-panel[open] summary::after {
       content: "-";
+    }
+
+    details.settings-panel[open] summary {
+      padding-bottom: 8px;
+      border-bottom: 1px solid #d7dee9;
     }
 
     .status {
@@ -825,7 +839,11 @@
 
       <section class="control-group">
         <details class="settings-panel">
-          <summary>Schatten einstellen</summary>
+          <summary>Einstellungen</summary>
+          <div class="slider-row">
+            <div class="slider-head"><span>Passgeschwindigkeit</span><strong id="passSpeedValue">100%</strong></div>
+            <input id="passSpeed" type="range" min="60" max="160" step="10" value="100">
+          </div>
           <div class="slider-row">
             <div class="slider-head"><span>Schattenlänge</span><strong id="lengthValue">520</strong></div>
             <input id="shadowLength" type="range" min="280" max="760" step="20" value="520">
@@ -1093,6 +1111,7 @@
     const presetText = document.getElementById("presetText");
 
     const sliders = {
+      passSpeed: document.getElementById("passSpeed"),
       shadowLength: document.getElementById("shadowLength"),
       bodyWidth: document.getElementById("bodyWidth"),
       armWidth: document.getElementById("armWidth"),
@@ -1100,6 +1119,7 @@
     };
 
     const sliderValues = {
+      passSpeed: document.getElementById("passSpeedValue"),
       shadowLength: document.getElementById("lengthValue"),
       bodyWidth: document.getElementById("bodyWidthValue"),
       armWidth: document.getElementById("armWidthValue"),
@@ -1163,6 +1183,7 @@
       passMode: "flat",
       fieldMode: "football",
       settings: {
+        passSpeed: Number(sliders.passSpeed.value),
         shadowLength: Number(sliders.shadowLength.value),
         bodyWidth: Number(sliders.bodyWidth.value),
         armWidth: Number(sliders.armWidth.value),
@@ -1205,6 +1226,7 @@
 
     function copySettings(settings) {
       return {
+        passSpeed: settings.passSpeed,
         shadowLength: settings.shadowLength,
         bodyWidth: settings.bodyWidth,
         armWidth: settings.armWidth,
@@ -1938,6 +1960,7 @@
 
     function resetToDefaultView() {
       stopAnimation();
+      sliders.passSpeed.value = "100";
       sliders.shadowLength.value = "520";
       sliders.bodyWidth.value = "34";
       sliders.armWidth.value = "86";
@@ -2092,7 +2115,9 @@
         for (const key of Object.keys(sliders)) {
           state.settings[key] = mix(startSettings[key], target.settings[key], eased);
           sliders[key].value = String(Math.round(state.settings[key]));
-          sliderValues[key].textContent = String(Math.round(state.settings[key]));
+          sliderValues[key].textContent = key === "passSpeed"
+            ? `${Math.round(state.settings[key])}%`
+            : String(Math.round(state.settings[key]));
         }
 
         render();
@@ -2317,7 +2342,9 @@
       const attempt = choosePassTarget();
       const passStartTime = performance.now();
       const passLength = distance(state.players.B, attempt.target);
-      const flyDuration = state.passMode === "bounce" ? 620 : state.passMode === "lob" ? Math.min(1050, 520 + passLength * 0.55) : 430;
+      const speedFactor = 100 / Math.max(20, state.settings.passSpeed);
+      const baseFlyDuration = state.passMode === "bounce" ? 620 : state.passMode === "lob" ? Math.min(1050, 520 + passLength * 0.55) : 430;
+      const flyDuration = baseFlyDuration * speedFactor;
       const impactDuration = attempt.result === "failed" || attempt.result === "blocked" ? 720 : 180;
 
       function passStep(now) {
@@ -2435,7 +2462,7 @@
     function syncSliderValues() {
       for (const key of Object.keys(sliders)) {
         state.settings[key] = Number(sliders[key].value);
-        sliderValues[key].textContent = sliders[key].value;
+        sliderValues[key].textContent = key === "passSpeed" ? `${sliders[key].value}%` : sliders[key].value;
       }
     }
 
