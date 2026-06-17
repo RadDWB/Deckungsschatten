@@ -213,43 +213,62 @@
       min-height: 38px;
       padding: 8px 10px;
       text-align: left;
-      color: #172033;
-      background: #ffffff;
-      border-color: #cfd8e6;
+      color: #ffffff;
+      background: #ff0048;
+      border-color: #ff0048;
       font-size: 0.91rem;
       line-height: 1.2;
       font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.48);
+      box-shadow: 0 0 0 1px rgba(255, 0, 72, 0.28), 0 0 14px rgba(255, 0, 72, 0.42);
     }
 
     .preset-button:hover {
-      background: #eef3fb;
+      background: #ff2f67;
+      border-color: #ff2f67;
+      box-shadow: 0 0 0 1px rgba(255, 0, 72, 0.38), 0 0 20px rgba(255, 0, 72, 0.58);
     }
 
     .preset-button.active {
       color: white;
-      background: #246bfe;
-      border-color: #246bfe;
+      background: #c90038;
+      border-color: #ff7a9b;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 22px rgba(255, 0, 72, 0.75);
     }
 
     .preset-button.bounce-preset {
-      color: #5b21b6;
-      background: #ffffff;
-      border-color: #7c3aed;
-      box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.32);
+      color: #ffffff;
+      background: #ff0048;
+      border-color: #ff0048;
+      box-shadow: 0 0 0 1px rgba(255, 0, 72, 0.28), 0 0 14px rgba(255, 0, 72, 0.42);
     }
 
     .preset-button.bounce-preset:hover {
       color: #ffffff;
-      background: #7c3aed;
-      border-color: #7c3aed;
-      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.2);
+      background: #ff2f67;
+      border-color: #ff2f67;
+      box-shadow: 0 0 0 1px rgba(255, 0, 72, 0.38), 0 0 20px rgba(255, 0, 72, 0.58);
     }
 
     .preset-button.bounce-preset.active {
       color: #ffffff;
-      background: #6d28d9;
-      border-color: #6d28d9;
-      box-shadow: 0 12px 26px rgba(124, 58, 237, 0.28);
+      background: #c90038;
+      border-color: #ff7a9b;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 22px rgba(255, 0, 72, 0.75);
+    }
+
+    button.animate-action-button {
+      background: #005dff;
+      border-color: #36b7ff;
+      color: #ffffff;
+      box-shadow: 0 0 0 1px rgba(54, 183, 255, 0.32), 0 0 18px rgba(0, 93, 255, 0.58), 0 10px 24px rgba(0, 93, 255, 0.26);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+
+    button.animate-action-button:hover {
+      background: #008cff;
+      border-color: #78d8ff;
+      box-shadow: 0 0 0 1px rgba(120, 216, 255, 0.45), 0 0 24px rgba(0, 140, 255, 0.72), 0 12px 28px rgba(0, 93, 255, 0.34);
     }
 
     button.secondary {
@@ -884,7 +903,7 @@
 
       <section class="control-group">
         <div class="button-row">
-          <button id="animateButton" type="button">Szene animieren</button>
+          <button id="animateButton" class="animate-action-button" type="button">Szene animieren</button>
           <button id="exportButton" class="secondary" type="button">Screenshot PNG</button>
           <button id="resetButton" class="secondary" type="button">Zurücksetzen</button>
         </div>
