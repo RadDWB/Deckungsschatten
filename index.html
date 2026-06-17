@@ -154,6 +154,57 @@
       gap: 7px;
     }
 
+    details.situation-panel {
+      padding: 0;
+      border: 1px solid #cfd8e6;
+      border-radius: var(--radius);
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    details.situation-panel summary {
+      min-height: 46px;
+      padding: 8px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      list-style: none;
+      color: #172033;
+      background: #ffffff;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    details.situation-panel summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.situation-panel summary::after {
+      content: "▾";
+      flex: 0 0 auto;
+      color: #5f6b7a;
+      font-size: 1rem;
+      transition: transform 140ms ease;
+    }
+
+    details.situation-panel[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .active-situation-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .situation-panel .preset-grid {
+      padding: 8px;
+      border-top: 1px solid #d7dee9;
+      background: #f8fafc;
+    }
+
     .preset-button {
       min-height: 38px;
       padding: 8px 10px;
@@ -803,8 +854,10 @@
       <button id="sportCommentButton" class="link-button sport-button" type="button">Sportfachlicher Kommentar</button>
 
       <section class="control-group">
-        <div class="label">Situation</div>
-        <div id="presetButtons" class="preset-grid"></div>
+        <details id="situationPanel" class="situation-panel">
+          <summary><span id="activeSituationLabel" class="active-situation-label">Preset-Situation</span></summary>
+          <div id="presetButtons" class="preset-grid"></div>
+        </details>
       </section>
 
       <section class="control-group">
@@ -1084,6 +1137,8 @@
     const passLayer = document.getElementById("passLayer");
     const playerLayer = document.getElementById("playerLayer");
 
+    const situationPanel = document.getElementById("situationPanel");
+    const activeSituationLabel = document.getElementById("activeSituationLabel");
     const presetButtons = document.getElementById("presetButtons");
     const bodyShadowToggle = document.getElementById("bodyShadowToggle");
     const armShadowToggle = document.getElementById("armShadowToggle");
@@ -2473,7 +2528,10 @@
         button.className = preset.mode === "bounce" ? "preset-button bounce-preset" : "preset-button";
         button.dataset.preset = String(index);
         button.textContent = `${index + 1}. ${preset.name}`;
-        button.addEventListener("click", () => loadPreset(index));
+        button.addEventListener("click", () => {
+          loadPreset(index);
+          situationPanel.open = false;
+        });
         presetButtons.appendChild(button);
       });
 
@@ -2515,6 +2573,7 @@
     }
 
     function updatePresetButtons() {
+      activeSituationLabel.textContent = `Preset-Situation: ${state.currentPreset + 1}. ${presets[state.currentPreset].name}`;
       presetButtons.querySelectorAll(".preset-button").forEach((button) => {
         const isActive = Number(button.dataset.preset) === state.currentPreset;
         button.classList.toggle("active", isActive);
