@@ -841,6 +841,29 @@
       stroke-linejoin: round;
     }
 
+    .brand-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 10px 18px 18px;
+      color: #30394a;
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+
+    .brand-footer img {
+      width: 84px;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+      box-shadow: 0 8px 18px rgba(28, 42, 68, 0.14);
+    }
+
+    .brand-footer span {
+      line-height: 1.2;
+    }
+
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
@@ -862,6 +885,10 @@
 
       .top-action {
         width: 100%;
+      }
+
+      .brand-footer {
+        padding: 8px 12px 16px;
       }
     }
   </style>
@@ -995,6 +1022,11 @@
       </div>
     </section>
   </main>
+
+  <footer class="brand-footer" aria-label="Copyright">
+    <img src="assets/straight-edge-media-logo.png" alt="Straight Edge Media Logo">
+    <span>&copy; 2026 Straight Edge Media</span>
+  </footer>
 
   <div id="didacticOverlay" class="modal-backdrop" hidden>
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="didacticTitle">
