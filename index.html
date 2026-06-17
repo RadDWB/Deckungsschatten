@@ -121,6 +121,33 @@
       gap: 8px;
     }
 
+    .mode-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-row.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .mode-button {
+      min-height: 40px;
+      background: #ffffff;
+      color: #182238;
+      border-color: #b8c3d4;
+    }
+
+    .mode-button:hover {
+      background: #eef3fb;
+    }
+
+    .mode-button.active {
+      color: #ffffff;
+      background: #182238;
+      border-color: #182238;
+    }
+
     .preset-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -159,13 +186,19 @@
     }
 
     button.link-button {
-      background: #ffffff;
-      color: var(--blue);
-      border-color: #b8c3d4;
+      margin: 0 0 14px;
+      background: #0f8f6f;
+      color: #ffffff;
+      border-color: #0f8f6f;
+      box-shadow: 0 8px 18px rgba(15, 143, 111, 0.22);
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
     }
 
     button.link-button:hover {
-      background: #eef3fb;
+      background: #0b765c;
+      border-color: #0b765c;
+      box-shadow: 0 13px 28px rgba(15, 143, 111, 0.34);
+      transform: translateY(-1px);
     }
 
     .checks {
@@ -285,6 +318,11 @@
     .status-pill.free {
       color: white;
       background: var(--green);
+    }
+
+    .status-pill.warning {
+      color: #101522;
+      background: var(--yellow);
     }
 
     .pass-length-pill {
@@ -485,6 +523,56 @@
       filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
     }
 
+    .lob-path {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 16 10;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    }
+
+    .lob-path.free {
+      stroke: var(--green);
+    }
+
+    .lob-path.warning {
+      stroke: var(--yellow);
+    }
+
+    .lob-path.danger {
+      stroke: var(--red);
+    }
+
+    .lob-zone {
+      fill: rgba(255, 255, 255, 0.16);
+      stroke-width: 4;
+      stroke-dasharray: 8 7;
+    }
+
+    .lob-zone.landing {
+      stroke: rgba(255, 255, 255, 0.88);
+    }
+
+    .lob-zone.intercept.free {
+      stroke: rgba(20, 169, 109, 0.8);
+    }
+
+    .lob-zone.intercept.warning {
+      stroke: rgba(243, 197, 61, 0.9);
+    }
+
+    .lob-zone.intercept.danger {
+      stroke: rgba(223, 63, 53, 0.95);
+      fill: rgba(223, 63, 53, 0.16);
+    }
+
+    .flight-dot {
+      fill: rgba(255, 255, 255, 0.9);
+      stroke: rgba(24, 34, 56, 0.45);
+      stroke-width: 2;
+    }
+
     .hint-line {
       fill: none;
       stroke: rgba(255, 255, 255, 0.96);
@@ -536,10 +624,24 @@
       stroke: #ffffff;
     }
 
+    .ball.failed {
+      fill: #ff4fc3;
+      stroke: #ffffff;
+    }
+
+    .ball.success {
+      fill: var(--green);
+      stroke: #ffffff;
+    }
+
     .blast-ring {
       fill: none;
       stroke: var(--red);
       stroke-width: 5;
+    }
+
+    .blast-ring.failed {
+      stroke: #ff4fc3;
     }
 
     .small-label {
@@ -578,6 +680,7 @@
         Der Verteidiger steht zwischen Ball und Mitspieler. Hinter ihm entsteht ein Bereich,
         in den der Ball schwer gespielt werden kann.
       </p>
+      <button id="didacticButton" class="link-button" type="button">Didaktischer Kommentar</button>
 
       <section class="control-group">
         <div class="label">Situation</div>
@@ -585,9 +688,26 @@
       </section>
 
       <section class="control-group">
+        <div class="label">Passart</div>
+        <div class="mode-row" aria-label="Passart wählen">
+          <button id="flatPassButton" class="mode-button active" type="button" aria-pressed="true">Flachpass</button>
+          <button id="lobPassButton" class="mode-button" type="button" aria-pressed="false">Bogenlampe</button>
+        </div>
+      </section>
+
+      <section class="control-group">
+        <div class="label">Feld</div>
+        <div class="mode-row three" aria-label="Feldtyp wählen">
+          <button class="mode-button active" type="button" data-field-mode="football" aria-pressed="true">Fußball</button>
+          <button class="mode-button" type="button" data-field-mode="handball" aria-pressed="false">Handball</button>
+          <button class="mode-button" type="button" data-field-mode="basketball" aria-pressed="false">Basketball</button>
+        </div>
+      </section>
+
+      <section class="control-group">
         <div class="button-row">
+          <button id="passButton" type="button">Pass spielen</button>
           <button id="animateButton" type="button">Szene animieren</button>
-          <button id="didacticButton" class="link-button" type="button">Didaktischer Kommentar</button>
           <button id="exportButton" class="secondary" type="button">Screenshot PNG</button>
           <button id="resetButton" class="secondary" type="button">Zurücksetzen</button>
         </div>
@@ -613,6 +733,10 @@
             <div class="slider-head"><span>Armschattenbreite</span><strong id="armWidthValue">86</strong></div>
             <input id="armWidth" type="range" min="44" max="150" step="2" value="86">
           </div>
+          <div class="slider-row" id="lobHeightRow" hidden>
+            <div class="slider-head"><span>Bogenhöhe</span><strong id="lobHeightValue">180</strong></div>
+            <input id="lobHeight" type="range" min="90" max="280" step="10" value="180">
+          </div>
         </details>
       </section>
 
@@ -624,6 +748,10 @@
         <div>
           <div class="label">Passlänge</div>
           <div id="passLengthPill" class="pass-length-pill">mittel</div>
+        </div>
+        <div id="lobRiskBlock" hidden>
+          <div class="label">Bogenlampe</div>
+          <div id="lobRiskPill" class="status-pill warning">riskant</div>
         </div>
       </section>
     </aside>
@@ -731,6 +859,10 @@
     const hintsToggle = document.getElementById("hintsToggle");
     const extraDefenderToggle = document.getElementById("extraDefenderToggle");
     const thirdAttackerToggle = document.getElementById("thirdAttackerToggle");
+    const flatPassButton = document.getElementById("flatPassButton");
+    const lobPassButton = document.getElementById("lobPassButton");
+    const fieldModeButtons = document.querySelectorAll("[data-field-mode]");
+    const passButton = document.getElementById("passButton");
     const animateButton = document.getElementById("animateButton");
     const didacticButton = document.getElementById("didacticButton");
     const didacticOverlay = document.getElementById("didacticOverlay");
@@ -739,19 +871,25 @@
     const resetButton = document.getElementById("resetButton");
     const statusPill = document.getElementById("statusPill");
     const passLengthPill = document.getElementById("passLengthPill");
+    const lobRiskBlock = document.getElementById("lobRiskBlock");
+    const lobRiskPill = document.getElementById("lobRiskPill");
     const presetText = document.getElementById("presetText");
 
     const sliders = {
       shadowLength: document.getElementById("shadowLength"),
       bodyWidth: document.getElementById("bodyWidth"),
-      armWidth: document.getElementById("armWidth")
+      armWidth: document.getElementById("armWidth"),
+      lobHeight: document.getElementById("lobHeight")
     };
 
     const sliderValues = {
       shadowLength: document.getElementById("lengthValue"),
       bodyWidth: document.getElementById("bodyWidthValue"),
-      armWidth: document.getElementById("armWidthValue")
+      armWidth: document.getElementById("armWidthValue"),
+      lobHeight: document.getElementById("lobHeightValue")
     };
+
+    const lobHeightRow = document.getElementById("lobHeightRow");
 
     const presets = [
       {
@@ -798,10 +936,13 @@
       dragged: null,
       animationFrame: null,
       passAnimation: null,
+      passMode: "flat",
+      fieldMode: "football",
       settings: {
         shadowLength: Number(sliders.shadowLength.value),
         bodyWidth: Number(sliders.bodyWidth.value),
-        armWidth: Number(sliders.armWidth.value)
+        armWidth: Number(sliders.armWidth.value),
+        lobHeight: Number(sliders.lobHeight.value)
       }
     };
 
@@ -832,7 +973,8 @@
       return {
         shadowLength: settings.shadowLength,
         bodyWidth: settings.bodyWidth,
-        armWidth: settings.armWidth
+        armWidth: settings.armWidth,
+        lobHeight: settings.lobHeight
       };
     }
 
@@ -870,6 +1012,84 @@
         y: a.y + ab.y * t
       };
       return distance(point, nearest);
+    }
+
+    function getLobControlPoint(from, to) {
+      const midpoint = {
+        x: (from.x + to.x) / 2,
+        y: (from.y + to.y) / 2
+      };
+      const vector = getVector(from, to);
+      const unit = normalize(vector);
+      const normal = { x: -unit.y, y: unit.x };
+      const defender = state.players.V;
+      const side = ((defender.x - midpoint.x) * normal.x + (defender.y - midpoint.y) * normal.y) >= 0 ? -1 : 1;
+      return clampToField(add(midpoint, scale(normal, side * state.settings.lobHeight)));
+    }
+
+    function quadraticPoint(from, control, to, t) {
+      const oneMinus = 1 - t;
+      return {
+        x: oneMinus * oneMinus * from.x + 2 * oneMinus * t * control.x + t * t * to.x,
+        y: oneMinus * oneMinus * from.y + 2 * oneMinus * t * control.y + t * t * to.y
+      };
+    }
+
+    function getLobPathData(from, to) {
+      const control = getLobControlPoint(from, to);
+      return {
+        control,
+        d: `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} Q ${control.x.toFixed(1)} ${control.y.toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`
+      };
+    }
+
+    function distanceToQuadratic(point, from, control, to) {
+      let best = Infinity;
+      for (let i = 0; i <= 32; i++) {
+        best = Math.min(best, distance(point, quadraticPoint(from, control, to, i / 32)));
+      }
+      return best;
+    }
+
+    function evaluateLobPass(receiverId = "M") {
+      const receiver = state.players[receiverId];
+      const ballCarrier = state.players.B;
+      const passLength = distance(ballCarrier, receiver);
+      const { control } = getLobPathData(ballCarrier, receiver);
+      const defenderDistance = distanceToQuadratic(state.players.V, ballCarrier, control, receiver);
+      const landingPressure = getActiveDefenderIds().some((id) => distance(state.players[id], receiver) < 112);
+      const secondDefenderPressure = extraDefenderToggle.checked && state.players.V2 && distance(state.players.V2, receiver) < 170;
+
+      if (defenderDistance < 48 || landingPressure) {
+        return {
+          key: "danger",
+          label: defenderDistance < 48 ? "abfangbar" : "Annahme unter Druck",
+          ok: false,
+          target: { ...state.players.V },
+          defenderDistance,
+          passLength
+        };
+      }
+
+      if (defenderDistance < 88 || passLength > 560 || secondDefenderPressure) {
+        return {
+          key: "warning",
+          label: passLength > 560 ? "lange Flugzeit" : "riskant",
+          ok: true,
+          target: { ...receiver },
+          defenderDistance,
+          passLength
+        };
+      }
+
+      return {
+        key: "free",
+        label: "spielbar",
+        ok: true,
+        target: { ...receiver },
+        defenderDistance,
+        passLength
+      };
     }
 
     // Der Schatten wird aus der aktuellen Richtung von B zu V gebaut.
@@ -1035,10 +1255,35 @@
       fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 28, width: 944, height: 594, rx: 6 }));
       fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 500, y1: 28, x2: 500, y2: 622 }));
       fieldLines.appendChild(createSvgElement("circle", { class: "field-line", cx: 500, cy: 325, r: 82 }));
-      fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 175, width: 150, height: 300 }));
-      fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 822, y: 175, width: 150, height: 300 }));
-      fieldLines.appendChild(createSvgElement("circle", { cx: 55, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
-      fieldLines.appendChild(createSvgElement("circle", { cx: 945, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
+
+      if (state.fieldMode === "football") {
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 175, width: 150, height: 300 }));
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 822, y: 175, width: 150, height: 300 }));
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 12, y: 255, width: 16, height: 140 }));
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 972, y: 255, width: 16, height: 140 }));
+        fieldLines.appendChild(createSvgElement("circle", { cx: 55, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
+        fieldLines.appendChild(createSvgElement("circle", { cx: 945, cy: 325, r: 10, fill: "rgba(255,255,255,0.8)" }));
+      } else if (state.fieldMode === "handball") {
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 18, y: 255, width: 18, height: 140 }));
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 964, y: 255, width: 18, height: 140 }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 28 205 Q 190 325 28 445" }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 972 205 Q 810 325 972 445" }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 28 155 Q 260 325 28 495", "stroke-dasharray": "12 10" }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 972 155 Q 740 325 972 495", "stroke-dasharray": "12 10" }));
+        fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 115, y1: 325, x2: 155, y2: 325 }));
+        fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 845, y1: 325, x2: 885, y2: 325 }));
+      } else if (state.fieldMode === "basketball") {
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 28, y: 150, width: 170, height: 350 }));
+        fieldLines.appendChild(createSvgElement("rect", { class: "field-line", x: 802, y: 150, width: 170, height: 350 }));
+        fieldLines.appendChild(createSvgElement("circle", { class: "field-line", cx: 145, cy: 325, r: 76 }));
+        fieldLines.appendChild(createSvgElement("circle", { class: "field-line", cx: 855, cy: 325, r: 76 }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 28 118 Q 310 325 28 532" }));
+        fieldLines.appendChild(createSvgElement("path", { class: "field-line", d: "M 972 118 Q 690 325 972 532" }));
+        fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 55, y1: 325, x2: 95, y2: 325 }));
+        fieldLines.appendChild(createSvgElement("line", { class: "field-line", x1: 905, y1: 325, x2: 945, y2: 325 }));
+        fieldLines.appendChild(createSvgElement("circle", { cx: 95, cy: 325, r: 8, fill: "rgba(255,255,255,0.8)" }));
+        fieldLines.appendChild(createSvgElement("circle", { cx: 905, cy: 325, r: 8, fill: "rgba(255,255,255,0.8)" }));
+      }
     }
 
     function render() {
@@ -1063,14 +1308,7 @@
       }
 
       if (passLineToggle.checked) {
-        passLayer.appendChild(createSvgElement("line", {
-          class: "pass-line",
-          x1: state.players.B.x,
-          y1: state.players.B.y,
-          x2: state.players.M.x,
-          y2: state.players.M.y,
-          stroke: status.color
-        }));
+        drawPassPreview(status);
       }
 
       if (hintsToggle.checked && status.key === "blocked") {
@@ -1107,6 +1345,48 @@
       updateText(status);
     }
 
+    function drawPassPreview(status) {
+      if (state.passMode === "lob") {
+        const risk = evaluateLobPass("M");
+        const path = getLobPathData(state.players.B, state.players.M);
+        passLayer.appendChild(createSvgElement("path", {
+          class: `lob-path ${risk.key}`,
+          d: path.d
+        }));
+        passLayer.appendChild(createSvgElement("circle", {
+          class: `lob-zone intercept ${risk.key}`,
+          cx: state.players.V.x,
+          cy: state.players.V.y,
+          r: 54
+        }));
+        passLayer.appendChild(createSvgElement("circle", {
+          class: "lob-zone landing",
+          cx: state.players.M.x,
+          cy: state.players.M.y,
+          r: 58
+        }));
+        for (const t of [0.25, 0.5, 0.75]) {
+          const point = quadraticPoint(state.players.B, path.control, state.players.M, t);
+          passLayer.appendChild(createSvgElement("circle", {
+            class: "flight-dot",
+            cx: point.x,
+            cy: point.y,
+            r: t === 0.5 ? 6 : 5
+          }));
+        }
+        return;
+      }
+
+      passLayer.appendChild(createSvgElement("line", {
+        class: "pass-line",
+        x1: state.players.B.x,
+        y1: state.players.B.y,
+        x2: state.players.M.x,
+        y2: state.players.M.y,
+        stroke: status.color
+      }));
+    }
+
     function drawPlayer(id, point, color, strokeColor = "rgba(255, 255, 255, 0.95)") {
       const group = createSvgElement("g", { class: "player", "data-player": id, transform: `translate(${point.x} ${point.y})` });
       group.appendChild(createSvgElement("circle", { class: "main", r: 31, fill: color, style: `stroke: ${strokeColor}` }));
@@ -1122,10 +1402,15 @@
       const target = pass ? pass.target : null;
       const progress = pass ? pass.progress : null;
       const isBlocked = pass && pass.result === "blocked" && progress > 0.82;
-      const cx = progress === null ? b.x + 31 : b.x + (target.x - b.x) * progress;
-      const cy = progress === null ? b.y - 21 : b.y + (target.y - b.y) * progress;
+      const isFailed = pass && pass.result === "failed" && progress > 0.82;
+      const isSuccess = pass && pass.result === "free" && progress > 0.92;
+      const animatedPoint = pass && pass.control
+        ? quadraticPoint(pass.start, pass.control, target, progress)
+        : null;
+      const cx = progress === null ? b.x + 31 : animatedPoint ? animatedPoint.x : b.x + (target.x - b.x) * progress;
+      const cy = progress === null ? b.y - 21 : animatedPoint ? animatedPoint.y : b.y + (target.y - b.y) * progress;
       playerLayer.appendChild(createSvgElement("circle", {
-        class: isBlocked ? "ball blocked" : "ball",
+        class: isFailed ? "ball failed" : isSuccess ? "ball success" : isBlocked ? "ball blocked" : "ball",
         cx,
         cy,
         r: 13
@@ -1134,19 +1419,19 @@
 
     function drawPassImpact() {
       const pass = state.passAnimation;
-      if (!pass || pass.result !== "blocked" || pass.progress < 1) return;
+      if (!pass || (pass.result !== "blocked" && pass.result !== "failed") || pass.progress < 1) return;
 
       const blink = Math.floor(pass.impactProgress * 8) % 2 === 0;
       const radius = 24 + pass.impactProgress * 30;
       playerLayer.appendChild(createSvgElement("circle", {
-        class: "blast-ring",
+        class: pass.result === "failed" ? "blast-ring failed" : "blast-ring",
         cx: pass.target.x,
         cy: pass.target.y,
         r: radius,
         style: `opacity: ${blink ? 0.9 : 0.25}`
       }));
       playerLayer.appendChild(createSvgElement("circle", {
-        class: "blast-ring",
+        class: pass.result === "failed" ? "blast-ring failed" : "blast-ring",
         cx: pass.target.x,
         cy: pass.target.y,
         r: Math.max(12, radius - 18),
@@ -1160,6 +1445,10 @@
       statusPill.className = `status-pill ${status.key}`;
       passLengthPill.textContent = passLength.label;
       passLengthPill.className = `pass-length-pill ${passLength.key}`;
+      const lobRisk = evaluateLobPass("M");
+      lobRiskBlock.hidden = state.passMode !== "lob";
+      lobRiskPill.textContent = lobRisk.label;
+      lobRiskPill.className = `status-pill ${lobRisk.key === "danger" ? "blocked" : lobRisk.key}`;
       presetText.textContent = presets[state.currentPreset].text;
       updatePresetButtons();
     }
@@ -1203,14 +1492,41 @@
       sliders.shadowLength.value = "520";
       sliders.bodyWidth.value = "34";
       sliders.armWidth.value = "86";
+      sliders.lobHeight.value = "180";
       bodyShadowToggle.checked = false;
       armShadowToggle.checked = false;
       passLineToggle.checked = false;
       hintsToggle.checked = false;
       extraDefenderToggle.checked = false;
       thirdAttackerToggle.checked = false;
+      setPassMode("flat");
+      setFieldMode("football");
       syncSliderValues();
       loadPreset(0);
+    }
+
+    function setPassMode(mode) {
+      state.passMode = mode;
+      flatPassButton.classList.toggle("active", mode === "flat");
+      lobPassButton.classList.toggle("active", mode === "lob");
+      flatPassButton.setAttribute("aria-pressed", String(mode === "flat"));
+      lobPassButton.setAttribute("aria-pressed", String(mode === "lob"));
+      lobHeightRow.hidden = mode !== "lob";
+      if (mode === "lob") {
+        passLineToggle.checked = true;
+      }
+      render();
+    }
+
+    function setFieldMode(mode) {
+      state.fieldMode = mode;
+      fieldModeButtons.forEach((button) => {
+        const active = button.dataset.fieldMode === mode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      drawFieldLines();
+      render();
     }
 
     function openDidacticOverlay() {
@@ -1322,10 +1638,32 @@
       return ids;
     }
 
+    function getTeammateInPassingLane(receiverId) {
+      if (!thirdAttackerToggle.checked || receiverId !== "M" || !state.players.M2) return null;
+      const ballCarrier = state.players.B;
+      const receiver = state.players.M;
+      const teammate = state.players.M2;
+      const laneDistance = distanceToSegment(teammate, ballCarrier, receiver);
+      const betweenBallAndReceiver =
+        distance(ballCarrier, teammate) < distance(ballCarrier, receiver) - 24 &&
+        distance(receiver, teammate) < distance(ballCarrier, receiver) - 24;
+      return betweenBallAndReceiver && laneDistance < 42 ? teammate : null;
+    }
+
     function evaluatePassToReceiver(receiverId) {
       const receiver = state.players[receiverId];
       const ballCarrier = state.players.B;
       const defenders = getActiveDefenderIds();
+      const teammateBlocker = getTeammateInPassingLane(receiverId);
+
+      if (teammateBlocker) {
+        return {
+          ok: false,
+          defenderId: null,
+          teammateBlocker,
+          reason: "teammate"
+        };
+      }
 
       if (isPointInActiveShadow(receiver)) {
         return {
@@ -1370,6 +1708,15 @@
     }
 
     function choosePassTarget() {
+      if (state.passMode === "lob") {
+        const risk = evaluateLobPass("M");
+        return {
+          result: risk.ok ? "free" : "failed",
+          target: risk.ok ? { ...state.players.M } : risk.target,
+          control: getLobPathData(state.players.B, risk.ok ? state.players.M : risk.target).control
+        };
+      }
+
       const teammateIds = ["M"];
       if (thirdAttackerToggle.checked && state.players.M2) {
         teammateIds.push("M2");
@@ -1388,19 +1735,28 @@
       }
 
       const firstBlock = evaluations[0]?.pass;
+      if (firstBlock?.teammateBlocker) {
+        return {
+          result: "failed",
+          target: { ...firstBlock.teammateBlocker }
+        };
+      }
+
       const defenderId = firstBlock?.defenderId && state.players[firstBlock.defenderId] ? firstBlock.defenderId : "V";
 
       return {
-        result: "blocked",
+        result: "failed",
         target: { ...state.players[defenderId] }
       };
     }
 
     function startPassAttempt() {
+      stopAnimation();
       const attempt = choosePassTarget();
       const passStartTime = performance.now();
-      const flyDuration = 430;
-      const impactDuration = attempt.result === "blocked" ? 620 : 180;
+      const passLength = distance(state.players.B, attempt.target);
+      const flyDuration = state.passMode === "lob" ? Math.min(1050, 520 + passLength * 0.55) : 430;
+      const impactDuration = attempt.result === "failed" || attempt.result === "blocked" ? 720 : 180;
 
       function passStep(now) {
         const elapsed = now - passStartTime;
@@ -1410,6 +1766,8 @@
         state.passAnimation = {
           result: attempt.result,
           target: attempt.target,
+          start: { ...state.players.B },
+          control: attempt.control || null,
           progress: flyProgress,
           impactProgress
         };
@@ -1444,11 +1802,23 @@
         .shadow.body { fill: rgba(245,143,35,0.34); stroke: rgba(245,143,35,0.78); }
         .shadow.arms { fill: rgba(219,56,47,0.22); stroke: rgba(219,56,47,0.6); }
         .pass-line { fill: none; stroke-width: 7; stroke-linecap: round; }
+        .lob-path { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16 10; }
+        .lob-path.free { stroke: #14a96d; }
+        .lob-path.warning { stroke: #f3c53d; }
+        .lob-path.danger { stroke: #df3f35; }
+        .lob-zone { fill: rgba(255,255,255,0.16); stroke-width: 4; stroke-dasharray: 8 7; }
+        .lob-zone.landing { stroke: rgba(255,255,255,0.88); }
+        .lob-zone.intercept.free { stroke: rgba(20,169,109,0.8); }
+        .lob-zone.intercept.warning { stroke: rgba(243,197,61,0.9); }
+        .lob-zone.intercept.danger { stroke: rgba(223,63,53,0.95); fill: rgba(223,63,53,0.16); }
+        .flight-dot { fill: rgba(255,255,255,0.9); stroke: rgba(24,34,56,0.45); stroke-width: 2; }
         .hint-line { fill: none; stroke: rgba(255,255,255,0.96); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
         .ghost { fill: rgba(255,255,255,0.75); stroke: #a6f2c8; stroke-width: 4; stroke-dasharray: 6 5; }
         .player circle.main { stroke: rgba(255,255,255,0.95); stroke-width: 5; }
         .player text { fill: white; font: 900 27px Arial, Helvetica, sans-serif; text-anchor: middle; dominant-baseline: central; }
         .ball { fill: #f59f22; stroke: rgba(255,255,255,0.95); stroke-width: 3; }
+        .ball.failed { fill: #ff4fc3; stroke: #ffffff; }
+        .ball.success { fill: #14a96d; stroke: #ffffff; }
         .small-label { fill: rgba(255,255,255,0.94); font: 800 17px Arial, Helvetica, sans-serif; text-anchor: middle; paint-order: stroke; stroke: rgba(0,0,0,0.32); stroke-width: 4px; stroke-linejoin: round; }
       `;
       clone.insertBefore(style, clone.firstChild);
@@ -1510,6 +1880,12 @@
         presetButtons.appendChild(button);
       });
 
+      passButton.addEventListener("click", startPassAttempt);
+      flatPassButton.addEventListener("click", () => setPassMode("flat"));
+      lobPassButton.addEventListener("click", () => setPassMode("lob"));
+      fieldModeButtons.forEach((button) => {
+        button.addEventListener("click", () => setFieldMode(button.dataset.fieldMode));
+      });
       animateButton.addEventListener("click", animateScene);
       didacticButton.addEventListener("click", openDidacticOverlay);
       closeDidacticButton.addEventListener("click", closeDidacticOverlay);
