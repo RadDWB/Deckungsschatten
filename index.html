@@ -156,9 +156,10 @@
 
     details.situation-panel {
       padding: 0;
-      border: 1px solid #cfd8e6;
+      border: 1px solid rgba(255, 51, 94, 0.65);
       border-radius: var(--radius);
-      background: #f8fafc;
+      background: #fff7fa;
+      box-shadow: 0 0 0 1px rgba(255, 51, 94, 0.12), 0 10px 24px rgba(255, 51, 94, 0.16);
       overflow: hidden;
     }
 
@@ -171,10 +172,11 @@
       gap: 10px;
       cursor: pointer;
       list-style: none;
-      color: #172033;
-      background: #ffffff;
+      color: #ffffff;
+      background: #3a1020;
       font-weight: 800;
       line-height: 1.2;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.34);
     }
 
     details.situation-panel summary::-webkit-details-marker {
@@ -184,7 +186,7 @@
     details.situation-panel summary::after {
       content: "▾";
       flex: 0 0 auto;
-      color: #5f6b7a;
+      color: #ff8aa3;
       font-size: 1rem;
       transition: transform 140ms ease;
     }
@@ -197,23 +199,25 @@
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: #ffffff;
     }
 
     .situation-panel .preset-grid {
       padding: 8px;
-      border-top: 1px solid #d7dee9;
-      background: #f8fafc;
+      border-top: 1px solid rgba(255, 51, 94, 0.38);
+      background: #fff7fa;
     }
 
     .preset-button {
       min-height: 38px;
       padding: 8px 10px;
       text-align: left;
-      color: #26334f;
+      color: #172033;
       background: #ffffff;
       border-color: #cfd8e6;
       font-size: 0.91rem;
       line-height: 1.2;
+      font-weight: 800;
     }
 
     .preset-button:hover {
