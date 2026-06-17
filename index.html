@@ -964,7 +964,6 @@
       }
       drawBall();
       drawPassImpact();
-      drawLabels(status);
       updateText(status);
     }
 
@@ -1013,16 +1012,6 @@
         r: Math.max(12, radius - 18),
         style: `opacity: ${blink ? 0.4 : 0.85}`
       }));
-    }
-
-    function drawLabels(status) {
-      const midpoint = {
-        x: (state.players.B.x + state.players.M.x) / 2,
-        y: (state.players.B.y + state.players.M.y) / 2 - 18
-      };
-      const label = createSvgElement("text", { class: "small-label", x: midpoint.x, y: midpoint.y });
-      label.textContent = status.passText;
-      playerLayer.appendChild(label);
     }
 
     function updateText(status) {
