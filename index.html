@@ -1345,10 +1345,9 @@
       if (extraDefenderToggle.checked) {
         drawPlayer("V2", state.players.V2, "var(--red)");
       }
-      drawPlayer("M", state.players.M, "var(--blue)", status.key === "blocked" ? "var(--red)" : "var(--green)");
+      drawPlayer("M", state.players.M, "var(--blue)", evaluatePassToReceiver("M").ok ? "var(--green)" : "var(--red)");
       if (thirdAttackerToggle.checked) {
-        const m2Blocked = isPointInActiveShadow(state.players.M2);
-        drawPlayer("M2", state.players.M2, "var(--blue)", m2Blocked ? "var(--red)" : "var(--green)");
+        drawPlayer("M2", state.players.M2, "var(--blue)", evaluatePassToReceiver("M2").ok ? "var(--green)" : "var(--red)");
       }
       drawBall();
       drawPassImpact();
@@ -1648,28 +1647,45 @@
       return ids;
     }
 
-    function getTeammateInPassingLane(receiverId) {
-      if (!thirdAttackerToggle.checked || receiverId !== "M" || !state.players.M2) return null;
+    function getPassLaneBlocker(receiver) {
       const ballCarrier = state.players.B;
-      const receiver = state.players.M;
-      const teammate = state.players.M2;
-      const laneDistance = distanceToSegment(teammate, ballCarrier, receiver);
-      const betweenBallAndReceiver =
-        distance(ballCarrier, teammate) < distance(ballCarrier, receiver) - 24 &&
-        distance(receiver, teammate) < distance(ballCarrier, receiver) - 24;
-      return betweenBallAndReceiver && laneDistance < 42 ? teammate : null;
+      const passLength = distance(ballCarrier, receiver);
+
+      for (const defenderId of getActiveDefenderIds()) {
+        const defender = state.players[defenderId];
+        const laneDistance = distanceToSegment(defender, ballCarrier, receiver);
+        const betweenBallAndReceiver =
+          distance(ballCarrier, defender) < passLength - 24 &&
+          distance(receiver, defender) < passLength - 24;
+
+        if (betweenBallAndReceiver && laneDistance < 46) {
+          return { id: defenderId, point: defender };
+        }
+      }
+
+      return null;
+    }
+
+    function getReceiverSpaceScore(receiver) {
+      const defenderDistances = getActiveDefenderIds().map((id) => distance(state.players[id], receiver));
+      const nearestDefender = defenderDistances.length ? Math.min(...defenderDistances) : 220;
+      const passLength = distance(state.players.B, receiver);
+      const longPassPenalty = passLength > 560 ? 45 : 0;
+      return nearestDefender - passLength * 0.08 - longPassPenalty;
     }
 
     function evaluatePassToReceiver(receiverId) {
       const receiver = state.players[receiverId];
       const ballCarrier = state.players.B;
+      const laneBlocker = getPassLaneBlocker(receiver);
 
       if (isPointInActiveShadow(receiver)) {
         return {
           ok: false,
           defenderId: "V",
           reason: "shadow",
-          target: { ...state.players.V }
+          target: { ...state.players.V },
+          score: -200
         };
       }
 
@@ -1678,7 +1694,18 @@
           ok: false,
           defenderId: null,
           reason: "too-close",
-          target: { ...receiver }
+          target: { ...receiver },
+          score: -120
+        };
+      }
+
+      if (laneBlocker) {
+        return {
+          ok: false,
+          defenderId: laneBlocker.id,
+          reason: "lane",
+          target: { ...laneBlocker.point },
+          score: -160
         };
       }
 
@@ -1686,28 +1713,51 @@
         ok: true,
         defenderId: null,
         reason: "free",
-        target: { ...receiver }
+        target: { ...receiver },
+        score: getReceiverSpaceScore(receiver)
       };
     }
 
     function choosePassTarget() {
       if (state.passMode === "lob") {
-        const risk = evaluateLobPass("M");
+        const teammateIds = ["M"];
+        if (thirdAttackerToggle.checked && state.players.M2) {
+          teammateIds.push("M2");
+        }
+        const lobOptions = teammateIds.map((id) => {
+          const risk = evaluateLobPass(id);
+          const riskScore = risk.key === "free" ? 220 : risk.key === "warning" ? 120 : -100;
+          return { id, risk, score: riskScore - risk.passLength * 0.06 };
+        });
+        const risk = lobOptions.sort((a, b) => b.score - a.score)[0].risk;
         return {
           result: risk.ok ? "free" : "failed",
-          target: risk.ok ? { ...state.players.M } : risk.target,
-          control: getLobPathData(state.players.B, risk.ok ? state.players.M : risk.target).control
+          target: risk.target,
+          control: getLobPathData(state.players.B, risk.target).control
         };
       }
 
-      const pass = evaluatePassToReceiver("M");
-      if (pass.ok) {
+      const teammateIds = ["M"];
+      if (thirdAttackerToggle.checked && state.players.M2) {
+        teammateIds.push("M2");
+      }
+
+      const evaluations = teammateIds.map((id) => ({
+        id,
+        pass: evaluatePassToReceiver(id)
+      }));
+      const freeTarget = evaluations
+        .filter((entry) => entry.pass.ok)
+        .sort((a, b) => b.pass.score - a.pass.score)[0];
+
+      if (freeTarget) {
         return {
           result: "free",
-          target: pass.target
+          target: freeTarget.pass.target
         };
       }
 
+      const pass = evaluations.sort((a, b) => b.pass.score - a.pass.score)[0].pass;
       return {
         result: "failed",
         target: pass.target
