@@ -554,6 +554,20 @@
       stroke: rgba(255, 255, 255, 0.88);
     }
 
+    .lob-zone.landing.free {
+      stroke: rgba(20, 169, 109, 0.9);
+    }
+
+    .lob-zone.landing.warning {
+      stroke: rgba(243, 197, 61, 0.95);
+      fill: rgba(243, 197, 61, 0.14);
+    }
+
+    .lob-zone.landing.danger {
+      stroke: rgba(223, 63, 53, 0.95);
+      fill: rgba(223, 63, 53, 0.16);
+    }
+
     .lob-zone.intercept.free {
       stroke: rgba(20, 169, 109, 0.8);
     }
@@ -1051,45 +1065,121 @@
       return best;
     }
 
+    function getVisibleTeammateIds() {
+      const ids = ["M"];
+      if (thirdAttackerToggle.checked && state.players.M2) {
+        ids.push("M2");
+      }
+      return ids;
+    }
+
+    function getNearestDefenderToLobPath(ballCarrier, control, receiver) {
+      return getActiveDefenderIds()
+        .map((id) => ({
+          id,
+          point: state.players[id],
+          distance: distanceToQuadratic(state.players[id], ballCarrier, control, receiver)
+        }))
+        .sort((a, b) => a.distance - b.distance)[0] || null;
+    }
+
+    function getNearestDefenderToLanding(receiver) {
+      return getActiveDefenderIds()
+        .map((id) => ({
+          id,
+          point: state.players[id],
+          distance: distance(state.players[id], receiver)
+        }))
+        .sort((a, b) => a.distance - b.distance)[0] || null;
+    }
+
     function evaluateLobPass(receiverId = "M") {
       const receiver = state.players[receiverId];
       const ballCarrier = state.players.B;
       const passLength = distance(ballCarrier, receiver);
-      const { control } = getLobPathData(ballCarrier, receiver);
-      const defenderDistance = distanceToQuadratic(state.players.V, ballCarrier, control, receiver);
-      const landingPressure = getActiveDefenderIds().some((id) => distance(state.players[id], receiver) < 112);
-      const secondDefenderPressure = extraDefenderToggle.checked && state.players.V2 && distance(state.players.V2, receiver) < 170;
+      const path = getLobPathData(ballCarrier, receiver);
+      const flightBlocker = getNearestDefenderToLobPath(ballCarrier, path.control, receiver);
+      const landingBlocker = getNearestDefenderToLanding(receiver);
+      const flatPassOpen = evaluatePassToReceiver(receiverId).ok;
 
-      if (defenderDistance < 48 || landingPressure) {
+      if (flightBlocker && flightBlocker.distance < 48) {
         return {
           key: "danger",
-          label: defenderDistance < 48 ? "abfangbar" : "Annahme unter Druck",
+          label: "abfangbar",
           ok: false,
-          target: { ...state.players.V },
-          defenderDistance,
-          passLength
+          target: { ...flightBlocker.point },
+          receiverId,
+          receiver: { ...receiver },
+          control: path.control,
+          d: path.d,
+          flightBlocker,
+          landingBlocker,
+          passLength,
+          score: -220
         };
       }
 
-      if (defenderDistance < 88 || passLength > 560 || secondDefenderPressure) {
+      if (landingBlocker && landingBlocker.distance < 84) {
+        return {
+          key: "danger",
+          label: "Landezone besetzt",
+          ok: false,
+          target: { ...landingBlocker.point },
+          receiverId,
+          receiver: { ...receiver },
+          control: path.control,
+          d: path.d,
+          flightBlocker,
+          landingBlocker,
+          passLength,
+          score: -190
+        };
+      }
+
+      if ((flightBlocker && flightBlocker.distance < 88) || (landingBlocker && landingBlocker.distance < 132) || passLength > 560 || flatPassOpen) {
+        const label = flatPassOpen
+          ? "Flachpass besser"
+          : passLength > 560
+            ? "lange Flugzeit"
+            : landingBlocker && landingBlocker.distance < 132
+              ? "Annahme unter Druck"
+              : "knappe Flugbahn";
         return {
           key: "warning",
-          label: passLength > 560 ? "lange Flugzeit" : "riskant",
+          label,
           ok: true,
           target: { ...receiver },
-          defenderDistance,
-          passLength
+          receiverId,
+          receiver: { ...receiver },
+          control: path.control,
+          d: path.d,
+          flightBlocker,
+          landingBlocker,
+          passLength,
+          score: 90 - passLength * 0.06
         };
       }
 
       return {
         key: "free",
-        label: "spielbar",
+        label: "sinnvoll",
         ok: true,
         target: { ...receiver },
-        defenderDistance,
-        passLength
+        receiverId,
+        receiver: { ...receiver },
+        control: path.control,
+        d: path.d,
+        flightBlocker,
+        landingBlocker,
+        passLength,
+        score: 220 - passLength * 0.04
       };
+    }
+
+    function chooseBestLobOption() {
+      return getVisibleTeammateIds()
+        .map((id) => evaluateLobPass(id))
+        .sort((a, b) => b.score - a.score)[0];
     }
 
     // Der Schatten wird aus der aktuellen Richtung von B zu V gebaut.
@@ -1356,26 +1446,30 @@
 
     function drawPassPreview(status) {
       if (state.passMode === "lob") {
-        const risk = evaluateLobPass("M");
-        const path = getLobPathData(state.players.B, state.players.M);
+        const risk = chooseBestLobOption();
         passLayer.appendChild(createSvgElement("path", {
           class: `lob-path ${risk.key}`,
-          d: path.d
+          d: risk.d
         }));
+        for (const defenderId of getActiveDefenderIds()) {
+          const defender = state.players[defenderId];
+          const distanceToPath = distanceToQuadratic(defender, state.players.B, risk.control, risk.receiver);
+          const zoneKey = distanceToPath < 48 ? "danger" : distanceToPath < 88 ? "warning" : "free";
+          passLayer.appendChild(createSvgElement("circle", {
+            class: `lob-zone intercept ${zoneKey}`,
+            cx: defender.x,
+            cy: defender.y,
+            r: 54
+          }));
+        }
         passLayer.appendChild(createSvgElement("circle", {
-          class: `lob-zone intercept ${risk.key}`,
-          cx: state.players.V.x,
-          cy: state.players.V.y,
-          r: 54
-        }));
-        passLayer.appendChild(createSvgElement("circle", {
-          class: "lob-zone landing",
-          cx: state.players.M.x,
-          cy: state.players.M.y,
+          class: `lob-zone landing ${risk.key}`,
+          cx: risk.receiver.x,
+          cy: risk.receiver.y,
           r: 58
         }));
         for (const t of [0.25, 0.5, 0.75]) {
-          const point = quadraticPoint(state.players.B, path.control, state.players.M, t);
+          const point = quadraticPoint(state.players.B, risk.control, risk.receiver, t);
           passLayer.appendChild(createSvgElement("circle", {
             class: "flight-dot",
             cx: point.x,
@@ -1383,6 +1477,12 @@
             r: t === 0.5 ? 6 : 5
           }));
         }
+        passLayer.appendChild(createSvgElement("text", {
+          class: "small-label",
+          x: risk.receiver.x,
+          y: Math.min(600, risk.receiver.y + 58)
+        }));
+        passLayer.lastChild.textContent = risk.label;
         return;
       }
 
@@ -1454,7 +1554,7 @@
       statusPill.className = `status-pill ${status.key}`;
       passLengthPill.textContent = passLength.label;
       passLengthPill.className = `pass-length-pill ${passLength.key}`;
-      const lobRisk = evaluateLobPass("M");
+      const lobRisk = chooseBestLobOption();
       lobRiskBlock.hidden = state.passMode !== "lob";
       lobRiskPill.textContent = lobRisk.label;
       lobRiskPill.className = `status-pill ${lobRisk.key === "danger" ? "blocked" : lobRisk.key}`;
@@ -1720,29 +1820,15 @@
 
     function choosePassTarget() {
       if (state.passMode === "lob") {
-        const teammateIds = ["M"];
-        if (thirdAttackerToggle.checked && state.players.M2) {
-          teammateIds.push("M2");
-        }
-        const lobOptions = teammateIds.map((id) => {
-          const risk = evaluateLobPass(id);
-          const riskScore = risk.key === "free" ? 220 : risk.key === "warning" ? 120 : -100;
-          return { id, risk, score: riskScore - risk.passLength * 0.06 };
-        });
-        const risk = lobOptions.sort((a, b) => b.score - a.score)[0].risk;
+        const risk = chooseBestLobOption();
         return {
           result: risk.ok ? "free" : "failed",
           target: risk.target,
-          control: getLobPathData(state.players.B, risk.target).control
+          control: risk.control
         };
       }
 
-      const teammateIds = ["M"];
-      if (thirdAttackerToggle.checked && state.players.M2) {
-        teammateIds.push("M2");
-      }
-
-      const evaluations = teammateIds.map((id) => ({
+      const evaluations = getVisibleTeammateIds().map((id) => ({
         id,
         pass: evaluatePassToReceiver(id)
       }));
@@ -1822,6 +1908,9 @@
         .lob-path.danger { stroke: #df3f35; }
         .lob-zone { fill: rgba(255,255,255,0.16); stroke-width: 4; stroke-dasharray: 8 7; }
         .lob-zone.landing { stroke: rgba(255,255,255,0.88); }
+        .lob-zone.landing.free { stroke: rgba(20,169,109,0.9); }
+        .lob-zone.landing.warning { stroke: rgba(243,197,61,0.95); fill: rgba(243,197,61,0.14); }
+        .lob-zone.landing.danger { stroke: rgba(223,63,53,0.95); fill: rgba(223,63,53,0.16); }
         .lob-zone.intercept.free { stroke: rgba(20,169,109,0.8); }
         .lob-zone.intercept.warning { stroke: rgba(243,197,61,0.9); }
         .lob-zone.intercept.danger { stroke: rgba(223,63,53,0.95); fill: rgba(223,63,53,0.16); }
