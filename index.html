@@ -637,10 +637,10 @@
           <span><i class="dot" style="background: var(--green)"></i>frei</span>
         </div>
         <div class="field-toggles" aria-label="Anzeigeoptionen">
-          <label class="check-row"><input id="bodyShadowToggle" type="checkbox" checked> Körperschatten</label>
-          <label class="check-row"><input id="armShadowToggle" type="checkbox" checked> Armschatten</label>
-          <label class="check-row"><input id="passLineToggle" type="checkbox" checked> Passlinie</label>
-          <label class="check-row"><input id="hintsToggle" type="checkbox" checked> Lösungspfeile</label>
+          <label class="check-row"><input id="bodyShadowToggle" type="checkbox"> Körperschatten</label>
+          <label class="check-row"><input id="armShadowToggle" type="checkbox"> Armschatten</label>
+          <label class="check-row"><input id="passLineToggle" type="checkbox"> Passlinie</label>
+          <label class="check-row"><input id="hintsToggle" type="checkbox"> Lösungspfeile</label>
           <label class="check-row"><input id="extraDefenderToggle" type="checkbox"> 2. Verteidiger</label>
           <label class="check-row"><input id="thirdAttackerToggle" type="checkbox"> 3. Angreifer</label>
         </div>
@@ -1195,8 +1195,6 @@
       stopAnimation();
       state.currentPreset = index;
       state.players = getPresetPlayers(index);
-      armShadowToggle.checked = presets[index].arms;
-      bodyShadowToggle.checked = true;
       render();
     }
 
@@ -1205,8 +1203,10 @@
       sliders.shadowLength.value = "520";
       sliders.bodyWidth.value = "34";
       sliders.armWidth.value = "86";
-      passLineToggle.checked = true;
-      hintsToggle.checked = true;
+      bodyShadowToggle.checked = false;
+      armShadowToggle.checked = false;
+      passLineToggle.checked = false;
+      hintsToggle.checked = false;
       extraDefenderToggle.checked = false;
       thirdAttackerToggle.checked = false;
       syncSliderValues();
