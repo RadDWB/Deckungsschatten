@@ -1262,7 +1262,7 @@
     }
 
     function getBounceFirstLegProgress(route = null) {
-      const points = route || [state.players.B, state.players.M2, state.players.M];
+      const points = route || [state.players.B, state.players.M];
       if (points.length < 3) return 1;
 
       const firstLeg = distance(points[0], points[1]);
@@ -1667,25 +1667,12 @@
     function drawPassPreview(status) {
       if (state.passMode === "bounce") {
         const bouncePass = evaluateBouncePass();
-        passLayer.appendChild(createSvgElement("line", {
-          class: "pass-line blocked-preview",
-          x1: state.players.B.x,
-          y1: state.players.B.y,
-          x2: state.players.M.x,
-          y2: state.players.M.y
-        }));
+        const directPass = evaluateBounceRoute(["B", "M"]);
+        const throughM2Pass = evaluateBounceRoute(["B", "M2", "M"]);
 
-        for (let i = 0; i < bouncePass.route.length - 1; i++) {
-          const from = bouncePass.route[i];
-          const to = bouncePass.route[i + 1];
-          const isBlockedSegment = !bouncePass.ok && i === bouncePass.blockedSegmentIndex;
-          passLayer.appendChild(createSvgElement("line", {
-            class: isBlockedSegment ? "pass-line blocked-preview" : "pass-line bounce-preview",
-            x1: from.x,
-            y1: from.y,
-            x2: to.x,
-            y2: to.y
-          }));
+        drawBounceRoutePreview(directPass, bouncePass.routeKey === directPass.routeKey);
+        if (bouncePass.routeKey === throughM2Pass.routeKey || !throughM2Pass.ok) {
+          drawBounceRoutePreview(throughM2Pass, bouncePass.routeKey === throughM2Pass.routeKey);
         }
 
         passLayer.appendChild(createSvgElement("text", {
@@ -1693,7 +1680,9 @@
           x: bouncePass.labelPoint.x,
           y: Math.max(62, bouncePass.labelPoint.y - 46)
         }));
-        passLayer.lastChild.textContent = bouncePass.ok ? "über Eck frei" : "Passweg zu";
+        passLayer.lastChild.textContent = bouncePass.ok
+          ? bouncePass.routeIds.length === 2 ? "direkt frei" : "über Eck frei"
+          : "Passweg zu";
         return;
       }
 
@@ -1746,6 +1735,26 @@
         y2: state.players.M.y,
         stroke: status.color
       }));
+    }
+
+    function drawBounceRoutePreview(pass, isSelected) {
+      const route = isSelected ? pass.route : pass.fullRoute;
+      for (let i = 0; i < route.length - 1; i++) {
+        const from = route[i];
+        const to = route[i + 1];
+        const isBlockedSegment = !pass.ok && i === pass.blockedSegmentIndex;
+        const shouldDraw = isSelected || isBlockedSegment;
+
+        if (shouldDraw) {
+          passLayer.appendChild(createSvgElement("line", {
+            class: isBlockedSegment ? "pass-line blocked-preview" : "pass-line bounce-preview",
+            x1: from.x,
+            y1: from.y,
+            x2: to.x,
+            y2: to.y
+          }));
+        }
+      }
     }
 
     function drawPlayer(id, point, color, strokeColor = "rgba(255, 255, 255, 0.95)") {
@@ -1829,8 +1838,13 @@
 
     function updateText(status) {
       const passLength = calculatePassLength();
-      statusPill.textContent = state.passMode === "bounce" ? "über Eck gelöst" : status.label;
-      statusPill.className = `status-pill ${state.passMode === "bounce" ? "free" : status.key}`;
+      const bouncePass = state.passMode === "bounce" ? evaluateBouncePass() : null;
+      statusPill.textContent = bouncePass
+        ? bouncePass.ok
+          ? bouncePass.routeIds.length === 2 ? "direkt frei" : "über Eck gelöst"
+          : "Passweg zu"
+        : status.label;
+      statusPill.className = `status-pill ${bouncePass ? bouncePass.ok ? "free" : "blocked" : status.key}`;
       passLengthPill.textContent = passLength.label;
       passLengthPill.className = `pass-length-pill ${passLength.key}`;
       const lobRisk = chooseBestLobOption();
@@ -2113,11 +2127,18 @@
     function evaluateBounceRoute(ids) {
       const routeEntries = getBounceRoute(ids);
       const route = routeEntries.map((entry) => entry.point);
+      const routeKey = ids.join("-");
 
       for (let i = 0; i < route.length - 1; i++) {
         const from = route[i];
         const to = route[i + 1];
-        const blocker = getSegmentLaneBlocker(from, to);
+        const toId = ids[i + 1];
+        const firstLegReceiverPass = i === 0 && (toId === "M" || toId === "M2")
+          ? evaluatePassToReceiver(toId)
+          : null;
+        const blocker = firstLegReceiverPass && !firstLegReceiverPass.ok
+          ? { id: firstLegReceiverPass.defenderId, point: firstLegReceiverPass.target }
+          : getSegmentLaneBlocker(from, to);
 
         if (blocker) {
           const partialRoute = [...route.slice(0, i + 1), { ...blocker.point }];
@@ -2127,6 +2148,7 @@
             route: partialRoute,
             fullRoute: route,
             routeIds: ids,
+            routeKey,
             blockedSegment: { from, to },
             blockedSegmentIndex: i,
             labelPoint: route[i + 1],
@@ -2142,17 +2164,21 @@
         route,
         fullRoute: route,
         routeIds: ids,
+        routeKey,
         blockedSegment: null,
         blockedSegmentIndex: -1,
         labelPoint: route[1],
-        score: 1000 - getRouteLength(route) * 0.08
+        score: (ids.length === 2 ? 1200 : 1000) - getRouteLength(route) * 0.08
       };
     }
 
     function evaluateBouncePass() {
+      const directPass = evaluateBounceRoute(["B", "M"]);
+      if (directPass.ok) return directPass;
+
       const candidates = [
         evaluateBounceRoute(["B", "M2", "M"]),
-        evaluateBounceRoute(["B", "M", "M2"])
+        directPass
       ];
 
       return candidates.sort((a, b) => b.score - a.score)[0];
