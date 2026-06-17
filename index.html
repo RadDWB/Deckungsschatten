@@ -1251,13 +1251,22 @@
       return id;
     }
 
-    function hasBounceReachedM2() {
-      return state.passAnimation && state.passAnimation.mode === "bounce" && state.passAnimation.progress >= getBounceM2Progress();
+    function hasBounceReachedPlayer(playerId) {
+      const pass = state.passAnimation;
+      if (!pass || pass.mode !== "bounce" || !pass.routeIds) return false;
+
+      const routeIndex = pass.routeIds.indexOf(playerId);
+      if (routeIndex < 1) return false;
+      if (routeIndex === 1) return pass.progress >= getBounceFirstLegProgress(pass.route);
+      return pass.progress >= 0.95;
     }
 
-    function getBounceM2Progress() {
-      const firstLeg = distance(state.players.B, state.players.M2);
-      const secondLeg = distance(state.players.M2, state.players.M);
+    function getBounceFirstLegProgress(route = null) {
+      const points = route || [state.players.B, state.players.M2, state.players.M];
+      if (points.length < 3) return 1;
+
+      const firstLeg = distance(points[0], points[1]);
+      const secondLeg = distance(points[1], points[2]);
       const total = firstLeg + secondLeg;
       return total < 0.001 ? 0.5 : firstLeg / total;
     }
@@ -1640,12 +1649,15 @@
       if (extraDefenderToggle.checked) {
         drawPlayer("V2", state.players.V2, "var(--red)");
       }
-      const mStroke = state.passMode === "bounce" && hasBounceReachedM2()
+      const mStroke = state.passMode === "bounce" && hasBounceReachedPlayer("M")
         ? "var(--green)"
         : evaluatePassToReceiver("M").ok ? "var(--green)" : "var(--red)";
       drawPlayer("M", state.players.M, "var(--blue)", mStroke);
       if (thirdAttackerToggle.checked || state.passMode === "bounce") {
-        drawPlayer("M2", state.players.M2, "var(--blue)", evaluatePassToReceiver("M2").ok ? "var(--green)" : "var(--red)");
+        const m2Stroke = state.passMode === "bounce" && hasBounceReachedPlayer("M2")
+          ? "var(--green)"
+          : evaluatePassToReceiver("M2").ok ? "var(--green)" : "var(--red)";
+        drawPlayer("M2", state.players.M2, "var(--blue)", m2Stroke);
       }
       drawBall();
       drawPassImpact();
@@ -1662,23 +1674,24 @@
           x2: state.players.M.x,
           y2: state.players.M.y
         }));
-        passLayer.appendChild(createSvgElement("polyline", {
-          class: "pass-line bounce-preview",
-          points: polygonPoints([state.players.B, state.players.M2, state.players.M])
-        }));
-        if (!bouncePass.ok) {
+
+        for (let i = 0; i < bouncePass.route.length - 1; i++) {
+          const from = bouncePass.route[i];
+          const to = bouncePass.route[i + 1];
+          const isBlockedSegment = !bouncePass.ok && i === bouncePass.blockedSegmentIndex;
           passLayer.appendChild(createSvgElement("line", {
-            class: "pass-line blocked-preview",
-            x1: bouncePass.blockedSegment.from.x,
-            y1: bouncePass.blockedSegment.from.y,
-            x2: bouncePass.blockedSegment.to.x,
-            y2: bouncePass.blockedSegment.to.y
+            class: isBlockedSegment ? "pass-line blocked-preview" : "pass-line bounce-preview",
+            x1: from.x,
+            y1: from.y,
+            x2: to.x,
+            y2: to.y
           }));
         }
+
         passLayer.appendChild(createSvgElement("text", {
           class: "small-label",
-          x: state.players.M2.x,
-          y: Math.max(62, state.players.M2.y - 46)
+          x: bouncePass.labelPoint.x,
+          y: Math.max(62, bouncePass.labelPoint.y - 46)
         }));
         passLayer.lastChild.textContent = bouncePass.ok ? "über Eck frei" : "Passweg zu";
         return;
@@ -1870,9 +1883,7 @@
         syncPassModeButtons();
       }
 
-      if (index === 5) {
-        armShadowToggle.checked = true;
-      }
+      armShadowToggle.checked = Boolean(presets[index].arms);
 
       state.players = getPresetPlayers(index);
       render();
@@ -2087,12 +2098,21 @@
       return getSegmentLaneBlocker(state.players.B, receiver);
     }
 
-    function evaluateBouncePass() {
-      const route = [
-        { ...state.players.B },
-        { ...state.players.M2 },
-        { ...state.players.M }
-      ];
+    function getRouteLength(route) {
+      let total = 0;
+      for (let i = 0; i < route.length - 1; i++) {
+        total += distance(route[i], route[i + 1]);
+      }
+      return total;
+    }
+
+    function getBounceRoute(ids) {
+      return ids.map((id) => ({ id, point: { ...state.players[id] } }));
+    }
+
+    function evaluateBounceRoute(ids) {
+      const routeEntries = getBounceRoute(ids);
+      const route = routeEntries.map((entry) => entry.point);
 
       for (let i = 0; i < route.length - 1; i++) {
         const from = route[i];
@@ -2100,11 +2120,17 @@
         const blocker = getSegmentLaneBlocker(from, to);
 
         if (blocker) {
+          const partialRoute = [...route.slice(0, i + 1), { ...blocker.point }];
           return {
             ok: false,
             target: { ...blocker.point },
-            route: [...route.slice(0, i + 1), { ...blocker.point }],
+            route: partialRoute,
+            fullRoute: route,
+            routeIds: ids,
             blockedSegment: { from, to },
+            blockedSegmentIndex: i,
+            labelPoint: route[i + 1],
+            score: i * 300 - getRouteLength(partialRoute) * 0.08,
             blocker
           };
         }
@@ -2112,9 +2138,24 @@
 
       return {
         ok: true,
-        target: { ...state.players.M },
-        route
+        target: { ...route[route.length - 1] },
+        route,
+        fullRoute: route,
+        routeIds: ids,
+        blockedSegment: null,
+        blockedSegmentIndex: -1,
+        labelPoint: route[1],
+        score: 1000 - getRouteLength(route) * 0.08
       };
+    }
+
+    function evaluateBouncePass() {
+      const candidates = [
+        evaluateBounceRoute(["B", "M2", "M"]),
+        evaluateBounceRoute(["B", "M", "M2"])
+      ];
+
+      return candidates.sort((a, b) => b.score - a.score)[0];
     }
 
     function getReceiverSpaceScore(receiver) {
@@ -2176,6 +2217,7 @@
           result: bouncePass.ok ? "free" : "failed",
           target: bouncePass.target,
           route: bouncePass.route,
+          routeIds: bouncePass.routeIds,
           mode: "bounce"
         };
       }
@@ -2230,6 +2272,7 @@
           start: { ...state.players.B },
           control: attempt.control || null,
           route: attempt.route || null,
+          routeIds: attempt.routeIds || null,
           mode: attempt.mode || state.passMode,
           progress: flyProgress,
           impactProgress
