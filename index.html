@@ -131,10 +131,6 @@
       grid-template-columns: 1fr 1fr 1fr;
     }
 
-    .mode-row.pass-modes {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
-
     .mode-button {
       min-height: 40px;
       background: #ffffff;
@@ -180,13 +176,19 @@
     }
 
     .preset-button.bounce-preset {
+      color: #5b21b6;
+      background: #ffffff;
+      border-color: #7c3aed;
+      box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.32);
+    }
+
+    .preset-button.bounce-preset:hover {
       color: #ffffff;
       background: #7c3aed;
       border-color: #7c3aed;
-      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.18);
+      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.2);
     }
 
-    .preset-button.bounce-preset:hover,
     .preset-button.bounce-preset.active {
       color: #ffffff;
       background: #6d28d9;
@@ -762,10 +764,9 @@
 
       <section class="control-group">
         <div class="label">Passart</div>
-        <div class="mode-row pass-modes" aria-label="Passart wählen">
+        <div class="mode-row" aria-label="Passart wählen">
           <button id="flatPassButton" class="mode-button active" type="button" aria-pressed="true">Flachpass</button>
           <button id="lobPassButton" class="mode-button" type="button" aria-pressed="false">Bogenlampe</button>
-          <button id="bouncePassButton" class="mode-button" type="button" aria-pressed="false">Über Eck</button>
         </div>
       </section>
 
@@ -1041,7 +1042,6 @@
     const thirdAttackerToggle = document.getElementById("thirdAttackerToggle");
     const flatPassButton = document.getElementById("flatPassButton");
     const lobPassButton = document.getElementById("lobPassButton");
-    const bouncePassButton = document.getElementById("bouncePassButton");
     const fieldModeButtons = document.querySelectorAll("[data-field-mode]");
     const passButton = document.getElementById("passButton");
     const animateButton = document.getElementById("animateButton");
@@ -1904,10 +1904,8 @@
     function syncPassModeButtons() {
       flatPassButton.classList.toggle("active", state.passMode === "flat");
       lobPassButton.classList.toggle("active", state.passMode === "lob");
-      bouncePassButton.classList.toggle("active", state.passMode === "bounce");
       flatPassButton.setAttribute("aria-pressed", String(state.passMode === "flat"));
       lobPassButton.setAttribute("aria-pressed", String(state.passMode === "lob"));
-      bouncePassButton.setAttribute("aria-pressed", String(state.passMode === "bounce"));
       lobHeightRow.hidden = state.passMode !== "lob";
       passButton.textContent = state.passMode === "bounce" ? "Über Eck spielen" : "Pass spielen";
     }
@@ -2309,7 +2307,6 @@
       passButton.addEventListener("click", startPassAttempt);
       flatPassButton.addEventListener("click", () => setPassMode("flat"));
       lobPassButton.addEventListener("click", () => setPassMode("lob"));
-      bouncePassButton.addEventListener("click", () => setPassMode("bounce"));
       fieldModeButtons.forEach((button) => {
         button.addEventListener("click", () => setFieldMode(button.dataset.fieldMode));
       });
