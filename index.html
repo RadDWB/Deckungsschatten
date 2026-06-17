@@ -158,6 +158,16 @@
       background: #eef3fb;
     }
 
+    button.link-button {
+      background: #ffffff;
+      color: var(--blue);
+      border-color: #b8c3d4;
+    }
+
+    button.link-button:hover {
+      background: #eef3fb;
+    }
+
     .checks {
       display: grid;
       gap: 9px;
@@ -308,6 +318,83 @@
       margin: 0;
       font-weight: 800;
       color: #172033;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(16, 21, 34, 0.58);
+    }
+
+    .modal-backdrop[hidden] {
+      display: none;
+    }
+
+    .modal {
+      width: min(680px, 100%);
+      max-height: min(760px, calc(100vh - 36px));
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(16, 21, 34, 0.28);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.25;
+    }
+
+    .close-button {
+      width: 38px;
+      min-height: 38px;
+      flex: 0 0 auto;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 16px 18px 18px;
+      color: #2c3545;
+      line-height: 1.5;
+    }
+
+    .modal-body p {
+      margin: 0 0 12px;
+    }
+
+    .modal-body ol {
+      margin: 0 0 14px;
+      padding-left: 1.35rem;
+    }
+
+    .modal-body li {
+      margin-bottom: 10px;
+    }
+
+    .modal-note {
+      padding: 12px;
+      border: 1px solid #cfd8e6;
+      border-radius: var(--radius);
+      background: #f8fafc;
+      font-weight: 700;
     }
 
     .board-wrap {
@@ -500,6 +587,7 @@
       <section class="control-group">
         <div class="button-row">
           <button id="animateButton" type="button">Szene animieren</button>
+          <button id="didacticButton" class="link-button" type="button">Didaktischer Kommentar</button>
           <button id="exportButton" class="secondary" type="button">Screenshot PNG</button>
           <button id="resetButton" class="secondary" type="button">Zurücksetzen</button>
         </div>
@@ -577,6 +665,55 @@
     </section>
   </main>
 
+  <div id="didacticOverlay" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="didacticTitle">
+      <div class="modal-header">
+        <h2 id="didacticTitle">Didaktischer Kommentar zum Einsatz im Unterricht</h2>
+        <button id="closeDidacticButton" class="close-button" type="button" aria-label="Kommentar schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Die App eignet sich besonders gut, wenn die Lernenden den Deckungsschatten zuerst selbst entdecken,
+          bevor die grafischen Hilfen eingeblendet werden.
+        </p>
+        <ol>
+          <li>
+            Starten Sie mit einem möglichst leeren Board: Körperschatten, Armschatten, Passlinie und
+            Lösungspfeile zunächst ausblenden. Die Schülerinnen und Schüler beschreiben nur die Positionen
+            von Ballbesitzer, Verteidiger und Mitspieler.
+          </li>
+          <li>
+            Lassen Sie die Klasse entscheiden, ob ein Pass sinnvoll ist. Wichtig ist die Begründung:
+            Steht der Mitspieler anspielbar, oder befindet er sich aus Sicht des Ballbesitzers hinter dem
+            Verteidiger?
+          </li>
+          <li>
+            Blenden Sie anschließend die Passlinie ein. So wird sichtbar, ob die intuitive Einschätzung der
+            Lernenden mit dem direkten Passweg übereinstimmt.
+          </li>
+          <li>
+            Aktivieren Sie danach den Körperschatten und bei Bedarf den Armschatten. Der Begriff
+            Deckungsschatten wird erst jetzt an die bereits beobachtete Spielsituation geknüpft.
+          </li>
+          <li>
+            Nutzen Sie die Lösungspfeile erst im nächsten Schritt. Die Lernenden sollen vorher selbst
+            vorschlagen, wohin der Mitspieler laufen oder wohin der Ballbesitzer andribbeln könnte, damit
+            ein neuer Passwinkel entsteht.
+          </li>
+          <li>
+            Wiederholen Sie das Vorgehen mit verschiedenen Situationen und lassen Sie einzelne Spieler
+            verschieben. Dadurch wird deutlich: Nicht die Entfernung allein entscheidet, sondern der Winkel
+            zwischen Ball, Verteidiger und Mitspieler.
+          </li>
+        </ol>
+        <p class="modal-note">
+          Merksatz für die Sicherung: Raus aus der Linie, rein in den freien Raum. Erst sehen, dann benennen,
+          dann lösen.
+        </p>
+      </div>
+    </section>
+  </div>
+
   <script>
     "use strict";
 
@@ -595,6 +732,9 @@
     const extraDefenderToggle = document.getElementById("extraDefenderToggle");
     const thirdAttackerToggle = document.getElementById("thirdAttackerToggle");
     const animateButton = document.getElementById("animateButton");
+    const didacticButton = document.getElementById("didacticButton");
+    const didacticOverlay = document.getElementById("didacticOverlay");
+    const closeDidacticButton = document.getElementById("closeDidacticButton");
     const exportButton = document.getElementById("exportButton");
     const resetButton = document.getElementById("resetButton");
     const statusPill = document.getElementById("statusPill");
@@ -1073,6 +1213,16 @@
       loadPreset(0);
     }
 
+    function openDidacticOverlay() {
+      didacticOverlay.hidden = false;
+      closeDidacticButton.focus();
+    }
+
+    function closeDidacticOverlay() {
+      didacticOverlay.hidden = true;
+      didacticButton.focus();
+    }
+
     function getAnimationTarget(index) {
       const target = copyPositions(getPresetPlayers(index));
       const settings = copySettings(state.settings);
@@ -1361,6 +1511,13 @@
       });
 
       animateButton.addEventListener("click", animateScene);
+      didacticButton.addEventListener("click", openDidacticOverlay);
+      closeDidacticButton.addEventListener("click", closeDidacticOverlay);
+      didacticOverlay.addEventListener("click", (event) => {
+        if (event.target === didacticOverlay) {
+          closeDidacticOverlay();
+        }
+      });
       exportButton.addEventListener("click", exportScreenshotPng);
       resetButton.addEventListener("click", resetToDefaultView);
 
@@ -1389,6 +1546,11 @@
     board.addEventListener("pointerup", endDrag);
     board.addEventListener("pointercancel", endDrag);
     board.addEventListener("pointerleave", endDrag);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !didacticOverlay.hidden) {
+        closeDidacticOverlay();
+      }
+    });
 
     drawFieldLines();
     initControls();
