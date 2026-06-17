@@ -131,6 +131,10 @@
       grid-template-columns: 1fr 1fr 1fr;
     }
 
+    .mode-row.pass-modes {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
     .mode-button {
       min-height: 40px;
       background: #ffffff;
@@ -175,6 +179,21 @@
       border-color: #246bfe;
     }
 
+    .preset-button.bounce-preset {
+      color: #ffffff;
+      background: #7c3aed;
+      border-color: #7c3aed;
+      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.18);
+    }
+
+    .preset-button.bounce-preset:hover,
+    .preset-button.bounce-preset.active {
+      color: #ffffff;
+      background: #6d28d9;
+      border-color: #6d28d9;
+      box-shadow: 0 12px 26px rgba(124, 58, 237, 0.28);
+    }
+
     button.secondary {
       background: #ffffff;
       color: #182238;
@@ -202,15 +221,15 @@
     }
 
     button.sport-button {
-      background: #246bfe;
-      border-color: #246bfe;
-      box-shadow: 0 8px 18px rgba(36, 107, 254, 0.2);
+      background: #7c3aed;
+      border-color: #7c3aed;
+      box-shadow: 0 8px 18px rgba(124, 58, 237, 0.22);
     }
 
     button.sport-button:hover {
-      background: #1f55cc;
-      border-color: #1f55cc;
-      box-shadow: 0 13px 28px rgba(36, 107, 254, 0.3);
+      background: #6d28d9;
+      border-color: #6d28d9;
+      box-shadow: 0 13px 28px rgba(124, 58, 237, 0.32);
     }
 
     .checks {
@@ -551,6 +570,17 @@
       filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
     }
 
+    .pass-line.blocked-preview {
+      stroke: var(--red);
+      stroke-dasharray: 12 10;
+      opacity: 0.9;
+    }
+
+    .pass-line.bounce-preview {
+      stroke: var(--green);
+      stroke-width: 8;
+    }
+
     .lob-path {
       fill: none;
       stroke-width: 7;
@@ -732,9 +762,10 @@
 
       <section class="control-group">
         <div class="label">Passart</div>
-        <div class="mode-row" aria-label="Passart wählen">
+        <div class="mode-row pass-modes" aria-label="Passart wählen">
           <button id="flatPassButton" class="mode-button active" type="button" aria-pressed="true">Flachpass</button>
           <button id="lobPassButton" class="mode-button" type="button" aria-pressed="false">Bogenlampe</button>
+          <button id="bouncePassButton" class="mode-button" type="button" aria-pressed="false">Über Eck</button>
         </div>
       </section>
 
@@ -905,7 +936,7 @@
           möglich bleibt.
         </p>
 
-        <h3>Was ist ein freier Spieler?</h3>
+        <h3>Was ist ein "freier" Spieler?</h3>
         <p>
           Frei ist ein Spieler nicht schon deshalb, weil kein Gegner direkt neben ihm steht. Frei ist er,
           wenn der Ball realistisch zu ihm gespielt werden kann und er ihn kontrolliert verarbeiten kann.
@@ -942,6 +973,19 @@
           schließen. In der App bedeutet grün: sinnvoller hoher Pass. Gelb bedeutet: nur mit Vorsicht,
           etwa wegen langer Flugzeit, knapper Flugbahn oder weil ein Flachpass eigentlich besser wäre.
           Rot bedeutet: abfangbar oder Landezone besetzt.
+        </p>
+
+        <h3>Wie die App diese Logik abbildet</h3>
+        <p>
+          Die App wertet nicht nur aus, ob M im Deckungsschatten von V steht. Sobald der zweite Verteidiger
+          aktiv ist, darf auch kein Pass "durch" V2 gespielt werden. Wird der dritte Angreifer eingeblendet,
+          vergleicht die Logik M und M2 und wählt für den Passversuch den freieren Mitspieler.
+        </p>
+        <p>
+          Bei der Bogenlampe prüft die App drei fachliche Fragen: Ist die Flugbahn über V oder V2 erreichbar?
+          Ist die Landezone beim Empfänger frei genug? Und wäre ein flacher Pass bereits die bessere Lösung?
+          Deshalb kann ein hoher Ball grün, gelb oder rot bewertet werden. Das Blinken nach einem misslungenen
+          Pass markiert die Stelle, an der der Ball abgefangen wird oder die Annahme scheitert.
         </p>
 
         <h3>Sportartspezifische Einordnung</h3>
@@ -997,6 +1041,7 @@
     const thirdAttackerToggle = document.getElementById("thirdAttackerToggle");
     const flatPassButton = document.getElementById("flatPassButton");
     const lobPassButton = document.getElementById("lobPassButton");
+    const bouncePassButton = document.getElementById("bouncePassButton");
     const fieldModeButtons = document.querySelectorAll("[data-field-mode]");
     const passButton = document.getElementById("passButton");
     const animateButton = document.getElementById("animateButton");
@@ -1066,6 +1111,13 @@
         text: "Du siehst: B, V und M stehen nicht mehr auf einer Linie. M soll im freien Raum bleiben und anspielbar sein.",
         positions: { B: { x: 255, y: 205 }, V: { x: 505, y: 325 }, M: { x: 745, y: 220 } },
         arms: false
+      },
+      {
+        name: "Deckungsschatten über Eck austricksen",
+        text: "M1 ist durch V verdeckt. M spielt schnell über den seitlichen M2, dadurch entsteht ein freier Winkel zurück auf M1.",
+        positions: { B: { x: 230, y: 325 }, V: { x: 500, y: 325 }, M: { x: 710, y: 325 } },
+        arms: false,
+        mode: "bounce"
       }
     ];
 
@@ -1106,6 +1158,16 @@
       players.V2 = extra.V2;
       players.M2 = extra.M2;
       return players;
+    }
+
+    function getBouncePlayers() {
+      return {
+        B: { x: 230, y: 325 },
+        V: { x: 500, y: 325 },
+        M: { x: 710, y: 325 },
+        M2: { x: 520, y: 205 },
+        V2: { x: 650, y: 205 }
+      };
     }
 
     function copySettings(settings) {
@@ -1180,6 +1242,24 @@
         control,
         d: `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} Q ${control.x.toFixed(1)} ${control.y.toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`
       };
+    }
+
+    function getPlayerLabel(id) {
+      if (state.passMode !== "bounce") return id;
+      if (id === "B") return "M";
+      if (id === "M") return "M1";
+      return id;
+    }
+
+    function hasBounceReachedM2() {
+      return state.passAnimation && state.passAnimation.mode === "bounce" && state.passAnimation.progress >= getBounceM2Progress();
+    }
+
+    function getBounceM2Progress() {
+      const firstLeg = distance(state.players.B, state.players.M2);
+      const secondLeg = distance(state.players.M2, state.players.M);
+      const total = firstLeg + secondLeg;
+      return total < 0.001 ? 0.5 : firstLeg / total;
     }
 
     function distanceToQuadratic(point, from, control, to) {
@@ -1560,8 +1640,11 @@
       if (extraDefenderToggle.checked) {
         drawPlayer("V2", state.players.V2, "var(--red)");
       }
-      drawPlayer("M", state.players.M, "var(--blue)", evaluatePassToReceiver("M").ok ? "var(--green)" : "var(--red)");
-      if (thirdAttackerToggle.checked) {
+      const mStroke = state.passMode === "bounce" && hasBounceReachedM2()
+        ? "var(--green)"
+        : evaluatePassToReceiver("M").ok ? "var(--green)" : "var(--red)";
+      drawPlayer("M", state.players.M, "var(--blue)", mStroke);
+      if (thirdAttackerToggle.checked || state.passMode === "bounce") {
         drawPlayer("M2", state.players.M2, "var(--blue)", evaluatePassToReceiver("M2").ok ? "var(--green)" : "var(--red)");
       }
       drawBall();
@@ -1570,6 +1653,27 @@
     }
 
     function drawPassPreview(status) {
+      if (state.passMode === "bounce") {
+        passLayer.appendChild(createSvgElement("line", {
+          class: "pass-line blocked-preview",
+          x1: state.players.B.x,
+          y1: state.players.B.y,
+          x2: state.players.M.x,
+          y2: state.players.M.y
+        }));
+        passLayer.appendChild(createSvgElement("polyline", {
+          class: "pass-line bounce-preview",
+          points: polygonPoints([state.players.B, state.players.M2, state.players.M])
+        }));
+        passLayer.appendChild(createSvgElement("text", {
+          class: "small-label",
+          x: state.players.M2.x,
+          y: Math.max(62, state.players.M2.y - 46)
+        }));
+        passLayer.lastChild.textContent = "über Eck frei";
+        return;
+      }
+
       if (state.passMode === "lob") {
         const risk = chooseBestLobOption();
         passLayer.appendChild(createSvgElement("path", {
@@ -1625,7 +1729,7 @@
       const group = createSvgElement("g", { class: "player", "data-player": id, transform: `translate(${point.x} ${point.y})` });
       group.appendChild(createSvgElement("circle", { class: "main", r: 31, fill: color, style: `stroke: ${strokeColor}` }));
       group.appendChild(createSvgElement("text", { x: 0, y: 1 }));
-      group.querySelector("text").textContent = id;
+      group.querySelector("text").textContent = getPlayerLabel(id);
       group.addEventListener("pointerdown", startDrag);
       playerLayer.appendChild(group);
     }
@@ -1638,17 +1742,44 @@
       const isBlocked = pass && pass.result === "blocked" && progress > 0.82;
       const isFailed = pass && pass.result === "failed" && progress > 0.82;
       const isSuccess = pass && pass.result === "free" && progress > 0.92;
+      const routePoint = pass && pass.route ? getPointOnRoute(pass.route, progress) : null;
       const animatedPoint = pass && pass.control
         ? quadraticPoint(pass.start, pass.control, target, progress)
         : null;
-      const cx = progress === null ? b.x + 31 : animatedPoint ? animatedPoint.x : b.x + (target.x - b.x) * progress;
-      const cy = progress === null ? b.y - 21 : animatedPoint ? animatedPoint.y : b.y + (target.y - b.y) * progress;
+      const cx = progress === null ? b.x + 31 : routePoint ? routePoint.x : animatedPoint ? animatedPoint.x : b.x + (target.x - b.x) * progress;
+      const cy = progress === null ? b.y - 21 : routePoint ? routePoint.y : animatedPoint ? animatedPoint.y : b.y + (target.y - b.y) * progress;
       playerLayer.appendChild(createSvgElement("circle", {
         class: isFailed ? "ball failed" : isSuccess ? "ball success" : isBlocked ? "ball blocked" : "ball",
         cx,
         cy,
         r: 13
       }));
+    }
+
+    function getPointOnRoute(route, progress) {
+      if (!route || route.length < 2) return null;
+
+      const segments = [];
+      let total = 0;
+      for (let i = 0; i < route.length - 1; i++) {
+        const length = distance(route[i], route[i + 1]);
+        segments.push({ from: route[i], to: route[i + 1], length });
+        total += length;
+      }
+
+      let remaining = total * Math.max(0, Math.min(1, progress));
+      for (const segment of segments) {
+        if (remaining <= segment.length) {
+          const t = segment.length < 0.001 ? 1 : remaining / segment.length;
+          return {
+            x: segment.from.x + (segment.to.x - segment.from.x) * t,
+            y: segment.from.y + (segment.to.y - segment.from.y) * t
+          };
+        }
+        remaining -= segment.length;
+      }
+
+      return { ...route[route.length - 1] };
     }
 
     function drawPassImpact() {
@@ -1675,15 +1806,17 @@
 
     function updateText(status) {
       const passLength = calculatePassLength();
-      statusPill.textContent = status.label;
-      statusPill.className = `status-pill ${status.key}`;
+      statusPill.textContent = state.passMode === "bounce" ? "über Eck gelöst" : status.label;
+      statusPill.className = `status-pill ${state.passMode === "bounce" ? "free" : status.key}`;
       passLengthPill.textContent = passLength.label;
       passLengthPill.className = `pass-length-pill ${passLength.key}`;
       const lobRisk = chooseBestLobOption();
       lobRiskBlock.hidden = state.passMode !== "lob";
       lobRiskPill.textContent = lobRisk.label;
       lobRiskPill.className = `status-pill ${lobRisk.key === "danger" ? "blocked" : lobRisk.key}`;
-      presetText.textContent = presets[state.currentPreset].text;
+      presetText.textContent = state.passMode === "bounce"
+        ? "M1 steht im Deckungsschatten von V. M spielt deshalb nicht durch den Schatten, sondern schnell über M2. Nach der Annahme von M2 ist die neue Passlinie auf M1 frei."
+        : presets[state.currentPreset].text;
       updatePresetButtons();
     }
 
@@ -1717,6 +1850,16 @@
     function loadPreset(index) {
       stopAnimation();
       state.currentPreset = index;
+      if (presets[index].mode === "bounce") {
+        setPassMode("bounce");
+        return;
+      }
+
+      if (state.passMode === "bounce") {
+        state.passMode = "flat";
+        syncPassModeButtons();
+      }
+
       state.players = getPresetPlayers(index);
       render();
     }
@@ -1741,15 +1884,32 @@
 
     function setPassMode(mode) {
       state.passMode = mode;
-      flatPassButton.classList.toggle("active", mode === "flat");
-      lobPassButton.classList.toggle("active", mode === "lob");
-      flatPassButton.setAttribute("aria-pressed", String(mode === "flat"));
-      lobPassButton.setAttribute("aria-pressed", String(mode === "lob"));
-      lobHeightRow.hidden = mode !== "lob";
+      syncPassModeButtons();
       if (mode === "lob") {
         passLineToggle.checked = true;
       }
+      if (mode === "bounce") {
+        state.currentPreset = presets.findIndex((preset) => preset.mode === "bounce");
+        state.players = copyPositions(getBouncePlayers());
+        bodyShadowToggle.checked = true;
+        armShadowToggle.checked = false;
+        passLineToggle.checked = true;
+        hintsToggle.checked = false;
+        thirdAttackerToggle.checked = true;
+        extraDefenderToggle.checked = false;
+      }
       render();
+    }
+
+    function syncPassModeButtons() {
+      flatPassButton.classList.toggle("active", state.passMode === "flat");
+      lobPassButton.classList.toggle("active", state.passMode === "lob");
+      bouncePassButton.classList.toggle("active", state.passMode === "bounce");
+      flatPassButton.setAttribute("aria-pressed", String(state.passMode === "flat"));
+      lobPassButton.setAttribute("aria-pressed", String(state.passMode === "lob"));
+      bouncePassButton.setAttribute("aria-pressed", String(state.passMode === "bounce"));
+      lobHeightRow.hidden = state.passMode !== "lob";
+      passButton.textContent = state.passMode === "bounce" ? "Über Eck spielen" : "Pass spielen";
     }
 
     function setFieldMode(mode) {
@@ -1812,6 +1972,17 @@
 
     function animateScene() {
       stopAnimation();
+
+      if (state.passMode === "bounce") {
+        state.players = copyPositions(getBouncePlayers());
+        bodyShadowToggle.checked = true;
+        armShadowToggle.checked = false;
+        passLineToggle.checked = true;
+        thirdAttackerToggle.checked = true;
+        render();
+        startPassAttempt();
+        return;
+      }
 
       const presetIndex = state.currentPreset;
       state.players = getPresetPlayers(presetIndex);
@@ -1954,6 +2125,19 @@
     }
 
     function choosePassTarget() {
+      if (state.passMode === "bounce") {
+        return {
+          result: "free",
+          target: { ...state.players.M },
+          route: [
+            { ...state.players.B },
+            { ...state.players.M2 },
+            { ...state.players.M }
+          ],
+          mode: "bounce"
+        };
+      }
+
       if (state.passMode === "lob") {
         const risk = chooseBestLobOption();
         return {
@@ -1990,7 +2174,7 @@
       const attempt = choosePassTarget();
       const passStartTime = performance.now();
       const passLength = distance(state.players.B, attempt.target);
-      const flyDuration = state.passMode === "lob" ? Math.min(1050, 520 + passLength * 0.55) : 430;
+      const flyDuration = state.passMode === "bounce" ? 620 : state.passMode === "lob" ? Math.min(1050, 520 + passLength * 0.55) : 430;
       const impactDuration = attempt.result === "failed" || attempt.result === "blocked" ? 720 : 180;
 
       function passStep(now) {
@@ -2003,6 +2187,8 @@
           target: attempt.target,
           start: { ...state.players.B },
           control: attempt.control || null,
+          route: attempt.route || null,
+          mode: attempt.mode || state.passMode,
           progress: flyProgress,
           impactProgress
         };
@@ -2037,6 +2223,8 @@
         .shadow.body { fill: rgba(245,143,35,0.34); stroke: rgba(245,143,35,0.78); }
         .shadow.arms { fill: rgba(219,56,47,0.22); stroke: rgba(219,56,47,0.6); }
         .pass-line { fill: none; stroke-width: 7; stroke-linecap: round; }
+        .pass-line.blocked-preview { stroke: #df3f35; stroke-dasharray: 12 10; opacity: 0.9; }
+        .pass-line.bounce-preview { stroke: #14a96d; stroke-width: 8; }
         .lob-path { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16 10; }
         .lob-path.free { stroke: #14a96d; }
         .lob-path.warning { stroke: #f3c53d; }
@@ -2111,7 +2299,7 @@
       presets.forEach((preset, index) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "preset-button";
+        button.className = preset.mode === "bounce" ? "preset-button bounce-preset" : "preset-button";
         button.dataset.preset = String(index);
         button.textContent = `${index + 1}. ${preset.name}`;
         button.addEventListener("click", () => loadPreset(index));
@@ -2121,6 +2309,7 @@
       passButton.addEventListener("click", startPassAttempt);
       flatPassButton.addEventListener("click", () => setPassMode("flat"));
       lobPassButton.addEventListener("click", () => setPassMode("lob"));
+      bouncePassButton.addEventListener("click", () => setPassMode("bounce"));
       fieldModeButtons.forEach((button) => {
         button.addEventListener("click", () => setFieldMode(button.dataset.fieldMode));
       });
