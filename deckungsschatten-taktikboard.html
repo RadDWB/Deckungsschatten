@@ -1118,6 +1118,47 @@
       .view-tabs { width: 100%; justify-content: center; }
     }
 
+    /* Vorhersage-Modus */
+    button.prediction-action-button { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+    button.prediction-action-button:hover { background: #6d28d9; border-color: #6d28d9; }
+    button.prediction-action-button.active { background: #c026d3; border-color: #c026d3; }
+
+    .field-stage { position: relative; }
+
+    .prediction-bar {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(15, 20, 31, 0.92);
+      color: #fff;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+      max-width: min(560px, 92%);
+      text-align: center;
+    }
+
+    .prediction-bar[hidden] { display: none; }
+    .pb-question { font-weight: 800; font-size: 1.04rem; line-height: 1.25; }
+    .pb-actions { display: flex; gap: 10px; margin-top: 2px; }
+    .pb-actions[hidden] { display: none; }
+    .pb-btn { width: auto; min-height: 42px; padding: 0 20px; border-radius: 8px; font-weight: 800; border: 0; cursor: pointer; color: #fff; }
+    .pb-btn.free { background: var(--green); }
+    .pb-btn.blocked { background: var(--red); }
+    .pb-btn:hover { filter: brightness(1.08); }
+    .pb-result { font-weight: 800; padding: 7px 12px; border-radius: 8px; font-size: 0.95rem; }
+    .pb-result.ok { background: rgba(20, 169, 109, 0.25); color: #c8ffe9; }
+    .pb-result.wrong { background: rgba(223, 63, 53, 0.25); color: #ffd6d2; }
+    .pb-next { width: auto; min-height: 38px; padding: 0 18px; border-radius: 8px; background: #fff; color: #142033; font-weight: 800; border: 0; cursor: pointer; }
+    .pb-next[hidden], .pb-result[hidden] { display: none; }
+    .field-toggles .check-row.disabled { opacity: 0.45; }
+
   </style>
 </head>
 </head>
@@ -1159,6 +1200,7 @@
       <section class="control-group">
         <div class="button-row">
           <button id="animateButton" class="animate-action-button" type="button">Szene animieren</button>
+          <button id="predictionButton" class="prediction-action-button" type="button">Vorhersage starten</button>
           <button id="exportButton" class="secondary" type="button">Screenshot PNG</button>
           <button id="resetButton" class="secondary" type="button">Zurücksetzen</button>
         </div>
@@ -1213,6 +1255,15 @@
       </div>
 
       <div class="field-stage">
+      <div id="predictionBar" class="prediction-bar" hidden>
+        <span class="pb-question">Ist der direkte Pass auf M möglich?</span>
+        <div class="pb-actions">
+          <button class="pb-btn free" type="button" data-guess="free">Pass frei</button>
+          <button class="pb-btn blocked" type="button" data-guess="blocked">Verdeckt</button>
+        </div>
+        <div id="predictionResult" class="pb-result" hidden></div>
+        <button id="predictionNext" class="pb-next" type="button" hidden>Neue Stellung</button>
+      </div>
       <div class="field-shell">
         <svg id="board" viewBox="0 0 1000 650" role="img" aria-label="Spielfeld mit Ballbesitzer, Verteidiger und Mitspieler">
           <defs>
@@ -2104,6 +2155,10 @@
       drawBall();
       drawPassImpact();
       updateText(status);
+      if (typeof predictionActive !== "undefined" && predictionActive && !predictionAnswered) {
+        statusPill.textContent = "?";
+        statusPill.className = "status-pill";
+      }
       if (typeof povState !== "undefined" && povState.visible) renderPov();
     }
 
@@ -3035,6 +3090,7 @@
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const povState = { visible: false, camId: "B", clock: 0 };
+    let povHitTargets = [];
 
     function buildPovCamera() {
       const eye = state.players[povState.camId] || state.players.B;
@@ -3134,43 +3190,82 @@
       return Math.max(60, Math.min(POV_VB.h - 120, p.y));
     }
 
+    function povTheme() {
+      if (state.fieldMode === "handball") {
+        return { skyTop: "#2b3a55", skyBot: "#9fb2c8", floorNear: "#4f9f95", floorFar: "#3c7d75",
+          grid: "rgba(255,255,255,0.24)", strong: "rgba(255,255,255,0.36)", prop: "goal", propW: 78, propH: 74, propColor: "#f2f5f8", indoor: true };
+      }
+      if (state.fieldMode === "basketball") {
+        return { skyTop: "#151b27", skyBot: "#39455c", floorNear: "#c98a4e", floorFar: "#9f6a30",
+          grid: "rgba(25,18,10,0.20)", strong: "rgba(25,18,10,0.32)", prop: "hoop", propW: 70, propH: 150, propColor: "#e8623a", indoor: true };
+      }
+      return { skyTop: "#1b2c44", skyBot: "#6f93ad", floorNear: "#2f8a60", floorFar: "#246b4c",
+        grid: "rgba(255,255,255,0.12)", strong: "rgba(255,255,255,0.2)", prop: "goal", propW: 120, propH: 116, propColor: "#ffffff", indoor: false };
+    }
+
+    function drawPovProp(cam, theme) {
+      const dist = 1150;
+      const c = { x: cam.pos.x + cam.fH.x * dist, y: cam.pos.y + cam.fH.y * dist };
+      const perp = { x: cam.fH.y, y: -cam.fH.x };
+      const baseCam = toCam(cam, { x: c.x, y: c.y, z: 0 });
+      if (baseCam.z < POV_NEAR + 20) return;
+      const gp = (off, z) => projectWorld(cam, { x: c.x + perp.x * off, y: c.y + perp.y * off, z });
+
+      if (theme.prop === "hoop") {
+        const pole = gp(0, 0); const poleTop = gp(0, theme.propH);
+        povGround.appendChild(createSvgElement("line", { x1: pole.x, y1: pole.y, x2: poleTop.x, y2: poleTop.y, stroke: "#cdd6e0", "stroke-width": 6 }));
+        const bbL = gp(-46, theme.propH); const bbR = gp(46, theme.propH);
+        const bbLb = gp(-46, theme.propH - 52); const bbRb = gp(46, theme.propH - 52);
+        povGround.appendChild(createSvgElement("polygon", { points: `${bbL.x},${bbL.y} ${bbR.x},${bbR.y} ${bbRb.x},${bbRb.y} ${bbLb.x},${bbLb.y}`, fill: "#eef2f6", stroke: "#9fb0c2", "stroke-width": 2 }));
+        const rimF = gp(0, theme.propH - 50);
+        povGround.appendChild(createSvgElement("ellipse", { cx: rimF.x, cy: rimF.y, rx: Math.max(6, Math.abs(bbR.x - bbL.x) * 0.18), ry: Math.max(3, Math.abs(bbR.x - bbL.x) * 0.06), fill: "none", stroke: theme.propColor, "stroke-width": 4 }));
+        return;
+      }
+
+      const hw = theme.propW; const H = theme.propH;
+      const pL0 = gp(-hw, 0); const pL1 = gp(-hw, H);
+      const pR0 = gp(hw, 0); const pR1 = gp(hw, H);
+      povGround.appendChild(createSvgElement("polygon", { points: `${pL0.x},${pL0.y} ${pL1.x},${pL1.y} ${pR1.x},${pR1.y} ${pR0.x},${pR0.y}`, fill: "rgba(255,255,255,0.07)", stroke: "none" }));
+      [[pL0, pL1], [pR0, pR1], [pL1, pR1]].forEach((pair) => {
+        povGround.appendChild(createSvgElement("line", { x1: pair[0].x, y1: pair[0].y, x2: pair[1].x, y2: pair[1].y, stroke: theme.propColor, "stroke-width": theme.indoor ? 4 : 5, "stroke-linecap": "round" }));
+      });
+    }
+
     function drawPovGround(cam) {
       povGround.innerHTML = "";
+      const theme = povTheme();
       const horizon = povHorizonY(cam);
-      povGround.appendChild(createSvgElement("rect", { class: "pov-sky", x: 0, y: 0, width: POV_VB.w, height: horizon }));
-      povGround.appendChild(createSvgElement("rect", { class: "pov-grass-far", x: 0, y: horizon - 1, width: POV_VB.w, height: POV_VB.h - horizon + 1 }));
 
-      const apron = createSvgElement("polygon", {
-        class: "pov-grass-near",
+      const grad = createSvgElement("linearGradient", { id: "povSkyDyn", x1: 0, y1: 0, x2: 0, y2: 1 });
+      grad.appendChild(createSvgElement("stop", { offset: 0, "stop-color": theme.skyTop }));
+      grad.appendChild(createSvgElement("stop", { offset: 1, "stop-color": theme.skyBot }));
+      povGround.appendChild(grad);
+
+      povGround.appendChild(createSvgElement("rect", { x: 0, y: 0, width: POV_VB.w, height: horizon, fill: "url(#povSkyDyn)" }));
+      povGround.appendChild(createSvgElement("rect", { x: 0, y: horizon - 1, width: POV_VB.w, height: POV_VB.h - horizon + 1, fill: theme.floorFar }));
+      povGround.appendChild(createSvgElement("polygon", {
+        fill: theme.floorNear,
         points: `0,${POV_VB.h} 0,${(horizon + 40).toFixed(1)} ${POV_VB.w},${(horizon + 40).toFixed(1)} ${POV_VB.w},${POV_VB.h}`
-      });
-      povGround.appendChild(apron);
+      }));
+
+      drawPovProp(cam, theme);
 
       const perp = { x: cam.fH.y, y: -cam.fH.x };
       const span = 520;
       for (const dist of [80, 180, 320, 500, 740, 1080]) {
-        const center = { x: cam.pos.x + cam.fH.x * dist, y: cam.pos.y + cam.fH.y * dist, z: 0 };
+        const center = { x: cam.pos.x + cam.fH.x * dist, y: cam.pos.y + cam.fH.y * dist };
         const seg = projectSegment(cam,
           { x: center.x - perp.x * span, y: center.y - perp.y * span, z: 0 },
           { x: center.x + perp.x * span, y: center.y + perp.y * span, z: 0 });
-        if (seg) {
-          povGround.appendChild(createSvgElement("line", {
-            class: "pov-grid", x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y
-          }));
-        }
+        if (seg) povGround.appendChild(createSvgElement("line", { stroke: theme.grid, "stroke-width": 1.4, x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y }));
       }
       for (const off of [-360, -180, 0, 180, 360]) {
         const seg = projectSegment(cam,
           { x: cam.pos.x + cam.fH.x * 40 + perp.x * off, y: cam.pos.y + cam.fH.y * 40 + perp.y * off, z: 0 },
           { x: cam.pos.x + cam.fH.x * 1180 + perp.x * off, y: cam.pos.y + cam.fH.y * 1180 + perp.y * off, z: 0 });
-        if (seg) {
-          povGround.appendChild(createSvgElement("line", {
-            class: off === 0 ? "pov-grid strong" : "pov-grid", x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y
-          }));
-        }
+        if (seg) povGround.appendChild(createSvgElement("line", { stroke: off === 0 ? theme.strong : theme.grid, "stroke-width": off === 0 ? 1.8 : 1.4, x1: seg.a.x, y1: seg.a.y, x2: seg.b.x, y2: seg.b.y }));
       }
     }
-
     function drawPovShadows(cam) {
       povShadowLayer.innerHTML = "";
       const bodyPoly = calculateShadowPolygon(state.players.B, state.players.V, state.settings.bodyWidth, state.settings.shadowLength);
@@ -3284,6 +3379,8 @@
         }));
       }
 
+      if (opts.id) povHitTargets.push({ id: opts.id, x: cx, y0: headCY - headR, y1: foot.y });
+
       povSceneLayer.appendChild(g);
 
       // Label
@@ -3299,6 +3396,7 @@
       const add = (id, opts) => {
         if (id === povState.camId) return;
         if (!state.players[id]) return;
+        opts.id = id;
         figs.push({ id, point: state.players[id], opts, depth: toCam(cam, { x: state.players[id].x, y: state.players[id].y, z: 0 }).z });
       };
 
@@ -3403,50 +3501,65 @@
       return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t, z: Math.sin(Math.PI * t) * 22 };
     }
 
-    function drawPovBall(cam) {
+    function povFlyingBall(cam) {
+      const pass = state.passAnimation;
+      if (!pass) return null;
+      const world = povBallWorld(pass);
+      const c = toCam(cam, world);
+      if (c.z < POV_NEAR) return { foreground: true };
+      const s = screenFromCam(c);
+      const depthScale = Math.max(0.4, Math.min(2.4, 240 / c.z));
+      const cls = pass.result === "free" && pass.progress > 0.92 ? "pov-ball success"
+        : (pass.result === "failed" || pass.result === "blocked") && pass.progress > 0.82 ? "pov-ball failed"
+        : "pov-ball";
+      return { depth: c.z, s, r: Math.max(7, 13 * depthScale), cls };
+    }
+
+    function makeFlyingBallActor(cam) {
+      const fb = povFlyingBall(cam);
+      if (!fb || fb.foreground) return null;
+      return {
+        depth: fb.depth,
+        draw: () => povSceneLayer.appendChild(createSvgElement("circle", { class: fb.cls, cx: fb.s.x, cy: fb.s.y, r: fb.r }))
+      };
+    }
+
+    function drawPovOverlayBall(cam) {
       povBallLayer.innerHTML = "";
       const pass = state.passAnimation;
 
       if (!pass) {
         if (povState.camId === "B") {
-          // Erste-Person-Ball in den eigenen Händen
           const bob = povBob(2, 4);
           povBallLayer.appendChild(createSvgElement("circle", { class: "pov-ball", cx: POV_VB.cx, cy: POV_VB.h - 52 + bob, r: 30 }));
-          povBallLayer.appendChild(createSvgElement("path", {
-            class: "pov-skin", d: `M ${POV_VB.cx - 70} ${POV_VB.h} q 36 -52 64 -38 q 14 8 0 22`, fill: "#f0c9a4", opacity: 0.95
-          }));
-          povBallLayer.appendChild(createSvgElement("path", {
-            class: "pov-skin", d: `M ${POV_VB.cx + 70} ${POV_VB.h} q -36 -52 -64 -38 q -14 8 0 22`, fill: "#f0c9a4", opacity: 0.95
-          }));
+          povBallLayer.appendChild(createSvgElement("path", { class: "pov-skin", d: `M ${POV_VB.cx - 70} ${POV_VB.h} q 36 -52 64 -38 q 14 8 0 22`, fill: "#f0c9a4", opacity: 0.95 }));
+          povBallLayer.appendChild(createSvgElement("path", { class: "pov-skin", d: `M ${POV_VB.cx + 70} ${POV_VB.h} q -36 -52 -64 -38 q -14 8 0 22`, fill: "#f0c9a4", opacity: 0.95 }));
         }
         return;
       }
 
-      const world = povBallWorld(pass);
-      const c = toCam(cam, world);
-      let s;
-      if (c.z < POV_NEAR) {
-        s = { x: POV_VB.cx, y: POV_VB.h - 60 };
-      } else {
-        s = screenFromCam(c);
+      const fb = povFlyingBall(cam);
+      if (fb && fb.foreground) {
+        povBallLayer.appendChild(createSvgElement("circle", { class: "pov-ball", cx: POV_VB.cx, cy: POV_VB.h - 60, r: 30 }));
       }
-      const depthScale = c.z > POV_NEAR ? Math.max(0.4, Math.min(2.4, 240 / c.z)) : 2.4;
-      const cls = pass.result === "free" && pass.progress > 0.92 ? "pov-ball success"
-        : (pass.result === "failed" || pass.result === "blocked") && pass.progress > 0.82 ? "pov-ball failed"
-        : "pov-ball";
-      povBallLayer.appendChild(createSvgElement("circle", { class: cls, cx: s.x, cy: s.y, r: Math.max(7, 13 * depthScale) }));
 
       if ((pass.result === "failed" || pass.result === "blocked") && pass.progress >= 1) {
+        const tc = toCam(cam, { x: pass.target.x, y: pass.target.y, z: 0 });
+        const s = tc.z < POV_NEAR ? { x: POV_VB.cx, y: POV_VB.h - 60 } : screenFromCam(tc);
         const blink = Math.floor(pass.impactProgress * 8) % 2 === 0;
-        const r = (24 + pass.impactProgress * 30) * Math.max(0.5, Math.min(1.6, 220 / Math.max(POV_NEAR, c.z)));
+        const r = (24 + pass.impactProgress * 30) * Math.max(0.5, Math.min(1.6, 220 / Math.max(POV_NEAR, tc.z)));
         povBallLayer.appendChild(createSvgElement("circle", {
           class: `pov-blast ${pass.result === "failed" ? "failed" : "block"}`,
           cx: s.x, cy: s.y, r, style: `opacity:${blink ? 0.9 : 0.3}`
         }));
       }
     }
-
     function updatePovChip() {
+      if (typeof predictionActive !== "undefined" && predictionActive && !predictionAnswered) {
+        povStatusChip.textContent = "Was meinst du – frei oder verdeckt?";
+        povStatusChip.className = "pov-chip";
+        return;
+      }
       const status = calculateStatus();
       povStatusChip.textContent = status.key === "blocked" ? "M steht im Deckungsschatten" : "M ist anspielbar";
       povStatusChip.className = `pov-chip ${status.key === "blocked" ? "blocked" : "free"}`;
@@ -3454,6 +3567,7 @@
 
     function renderPov() {
       const cam = buildPovCamera();
+      povHitTargets = [];
       povShadowLayer.innerHTML = "";
       povPathLayer.innerHTML = "";
       povSceneLayer.innerHTML = "";
@@ -3463,13 +3577,19 @@
       drawPovShadows(cam);
       drawPovPaths(cam);
       drawPovHints(cam);
-      for (const fig of povFigureList(cam)) {
-        drawPovFigure(cam, fig.point, fig.opts);
-      }
-      drawPovBall(cam);
+
+      const actors = povFigureList(cam).map((f) => ({
+        depth: f.depth,
+        draw: () => drawPovFigure(cam, f.point, f.opts)
+      }));
+      const ballActor = makeFlyingBallActor(cam);
+      if (ballActor) actors.push(ballActor);
+      actors.sort((a, b) => b.depth - a.depth);
+      for (const a of actors) a.draw();
+
+      drawPovOverlayBall(cam);
       updatePovChip();
     }
-
     function setPovCamera(id) {
       povState.camId = id;
       document.querySelectorAll(".pov-cam-bar .cam-btn").forEach((btn) => {
@@ -3490,12 +3610,144 @@
       if (povState.visible) renderPov();
     }
 
+    const predictionButton = document.getElementById("predictionButton");
+    const predictionBar = document.getElementById("predictionBar");
+    const predictionResult = document.getElementById("predictionResult");
+    const predictionNext = document.getElementById("predictionNext");
+    const predictionActions = predictionBar ? predictionBar.querySelector(".pb-actions") : null;
+    const predHelperToggles = [bodyShadowToggle, armShadowToggle, passLineToggle, hintsToggle];
+    let predictionActive = false;
+    let predictionAnswered = false;
+
+    function predictionTruth() {
+      const body = calculateShadowPolygon(state.players.B, state.players.V, state.settings.bodyWidth, state.settings.shadowLength);
+      const arms = calculateShadowPolygon(state.players.B, state.players.V, state.settings.armWidth, state.settings.shadowLength);
+      const inShadow = pointInPolygon(state.players.M, body) || pointInPolygon(state.players.M, arms);
+      const lane = getPassLaneBlocker(state.players.M);
+      const tooClose = distance(state.players.B, state.players.M) < 72;
+      return (inShadow || lane || tooClose) ? "blocked" : "free";
+    }
+
+    function newPredictionSituation() {
+      stopAnimation();
+      const B = { x: 195 + Math.random() * 70, y: 235 + Math.random() * 180 };
+      const V = { x: 460 + Math.random() * 90, y: 250 + Math.random() * 150 };
+      const dir = normalize(getVector(B, V));
+      const normal = { x: -dir.y, y: dir.x };
+      const behind = 110 + Math.random() * 230;
+      const lateral = (Math.random() * 2 - 1) * 155;
+      const M = clampToField(add(add(V, scale(dir, behind)), scale(normal, lateral)));
+      state.players.B = B;
+      state.players.V = V;
+      state.players.M = M;
+      const extra = getExtraPositions(state.players);
+      state.players.V2 = extra.V2;
+      state.players.M2 = extra.M2;
+      predictionAnswered = false;
+      predictionResult.hidden = true;
+      predictionNext.hidden = true;
+      if (predictionActions) predictionActions.hidden = false;
+      predHelperToggles.forEach((t) => { t.checked = false; });
+      render();
+    }
+
+    function answerPrediction(guess) {
+      if (predictionAnswered) return;
+      predictionAnswered = true;
+      const truth = predictionTruth();
+      const correct = guess === truth;
+      bodyShadowToggle.checked = true;
+      armShadowToggle.checked = true;
+      passLineToggle.checked = true;
+      if (truth === "blocked") hintsToggle.checked = true;
+      if (predictionActions) predictionActions.hidden = true;
+      predictionResult.hidden = false;
+      predictionResult.className = "pb-result " + (correct ? "ok" : "wrong");
+      predictionResult.textContent = (correct ? "Richtig! " : "Knapp daneben. ") +
+        (truth === "blocked" ? "M steht im Deckungsschatten – der direkte Pass ist verdeckt." : "M ist frei anspielbar.");
+      predictionNext.hidden = false;
+      render();
+      startPassAttempt();
+    }
+
+    function setPrediction(active) {
+      predictionActive = active;
+      predictionBar.hidden = !active;
+      predictionButton.textContent = active ? "Vorhersage beenden" : "Vorhersage starten";
+      predictionButton.classList.toggle("active", active);
+      predHelperToggles.forEach((t) => {
+        t.disabled = active;
+        const row = t.closest(".check-row");
+        if (row) row.classList.toggle("disabled", active);
+      });
+      if (active) {
+        newPredictionSituation();
+      } else {
+        render();
+      }
+    }
+
+    function setupPrediction() {
+      if (!predictionButton) return;
+      predictionButton.addEventListener("click", () => setPrediction(!predictionActive));
+      predictionBar.querySelectorAll(".pb-btn").forEach((b) => {
+        b.addEventListener("click", () => answerPrediction(b.dataset.guess));
+      });
+      predictionNext.addEventListener("click", newPredictionSituation);
+      resetButton.addEventListener("click", () => { if (predictionActive) setPrediction(false); });
+    }
+
     function setupPov() {
       viewTopButton.addEventListener("click", () => setView("top"));
       viewPovButton.addEventListener("click", () => setView("pov"));
       document.querySelectorAll(".pov-cam-bar .cam-btn").forEach((btn) => {
         btn.addEventListener("click", () => setPovCamera(btn.dataset.cam));
       });
+
+      function povPointerToSvg(e) {
+        const ctm = povSvg.getScreenCTM();
+        return { x: (e.clientX - ctm.e) / ctm.a, y: (e.clientY - ctm.f) / ctm.d };
+      }
+      function povInverseGround(cam, sx, sy) {
+        const dirCam = { x: (sx - POV_VB.cx) / POV_FOCAL, y: (POV_VB.cy - sy) / POV_FOCAL, z: 1 };
+        const wd = {
+          x: dirCam.x * cam.right.x + dirCam.y * cam.up.x + dirCam.z * cam.forward.x,
+          y: dirCam.x * cam.right.y + dirCam.y * cam.up.y + dirCam.z * cam.forward.y,
+          z: dirCam.x * cam.right.z + dirCam.y * cam.up.z + dirCam.z * cam.forward.z
+        };
+        if (wd.z >= -0.0002) return null;
+        const t = -cam.pos.z / wd.z;
+        if (t <= 0) return null;
+        return clampToField({ x: cam.pos.x + t * wd.x, y: cam.pos.y + t * wd.y });
+      }
+      let povDragId = null;
+      povSvg.addEventListener("pointerdown", (e) => {
+        const p = povPointerToSvg(e);
+        let best = null;
+        let bestD = 55;
+        for (const t of povHitTargets) {
+          const ny = Math.max(t.y0, Math.min(t.y1, p.y));
+          const d = Math.hypot(t.x - p.x, ny - p.y);
+          if (d < bestD) { bestD = d; best = t; }
+        }
+        if (best) {
+          stopAnimation();
+          povDragId = best.id;
+          state.dragged = best.id;
+          try { povSvg.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+        }
+      });
+      povSvg.addEventListener("pointermove", (e) => {
+        if (!povDragId) return;
+        const cam = buildPovCamera();
+        const p = povPointerToSvg(e);
+        const g = povInverseGround(cam, p.x, p.y);
+        if (g) { state.players[povDragId] = g; render(); }
+      });
+      function povEndDrag() { povDragId = null; state.dragged = null; }
+      povSvg.addEventListener("pointerup", povEndDrag);
+      povSvg.addEventListener("pointercancel", povEndDrag);
+      povSvg.addEventListener("pointerleave", povEndDrag);
 
       function povTick(now) {
         povState.clock = now / 1000;
@@ -3508,6 +3760,7 @@
     }
 
     setupPov();
+    setupPrediction();
 
     drawFieldLines();
     initControls();
