@@ -304,6 +304,20 @@
       transform: translateY(-1px);
     }
 
+    button.settings-action-button {
+      width: auto;
+      min-height: 42px;
+      padding: 0 16px;
+      color: #182238;
+      background: #ffffff;
+      border-color: #b8c3d4;
+    }
+
+    button.settings-action-button:hover {
+      background: #eef3fb;
+      border-color: #9fb0c8;
+    }
+
     button.link-button {
       margin: 0 0 14px;
       background: #0f8f6f;
@@ -394,51 +408,6 @@
 
     input[type="range"] {
       accent-color: var(--blue);
-    }
-
-    details.settings-panel {
-      padding: 10px;
-      border: 1px solid #c5d2e4;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    details.settings-panel summary {
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      cursor: pointer;
-      font-weight: 800;
-      list-style: none;
-      color: #172033;
-    }
-
-    details.settings-panel summary::-webkit-details-marker {
-      display: none;
-    }
-
-    details.settings-panel summary::after {
-      content: "+";
-      width: 24px;
-      height: 24px;
-      display: inline-grid;
-      place-items: center;
-      border-radius: 999px;
-      color: white;
-      background: #182238;
-      font-weight: 900;
-    }
-
-    details.settings-panel[open] summary::after {
-      content: "-";
-    }
-
-    details.settings-panel[open] summary {
-      padding-bottom: 8px;
-      border-bottom: 1px solid #d7dee9;
     }
 
     .status {
@@ -628,6 +597,9 @@
 
     .top-action {
       flex: 0 0 auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .dot {
@@ -985,32 +957,6 @@
         <p class="memory">Raus aus der Linie — rein in den freien Raum.</p>
       </section>
 
-      <section class="control-group">
-        <details class="settings-panel">
-          <summary>Einstellungen</summary>
-          <div class="slider-row">
-            <div class="slider-head"><span>Passgeschwindigkeit</span><strong id="passSpeedValue">100%</strong></div>
-            <input id="passSpeed" type="range" min="60" max="160" step="10" value="100">
-          </div>
-          <div class="slider-row">
-            <div class="slider-head"><span>Schattenlänge</span><strong id="lengthValue">520</strong></div>
-            <input id="shadowLength" type="range" min="280" max="760" step="20" value="520">
-          </div>
-          <div class="slider-row">
-            <div class="slider-head"><span>Körperschattenbreite</span><strong id="bodyWidthValue">34</strong></div>
-            <input id="bodyWidth" type="range" min="18" max="76" step="2" value="34">
-          </div>
-          <div class="slider-row">
-            <div class="slider-head"><span>Armschattenbreite</span><strong id="armWidthValue">86</strong></div>
-            <input id="armWidth" type="range" min="44" max="150" step="2" value="86">
-          </div>
-          <div class="slider-row" id="lobHeightRow" hidden>
-            <div class="slider-head"><span>Bogenhöhe</span><strong id="lobHeightValue">180</strong></div>
-            <input id="lobHeight" type="range" min="90" max="280" step="10" value="180">
-          </div>
-        </details>
-      </section>
-
       <section class="control-group status">
         <div>
           <div class="label">Aktueller Status</div>
@@ -1037,6 +983,7 @@
         </div>
         <div class="top-action">
           <button id="passButton" class="pass-action-button" type="button">Pass spielen</button>
+          <button id="settingsButton" class="settings-action-button" type="button">Einstellungen</button>
         </div>
         <div class="field-toggles" aria-label="Anzeigeoptionen">
           <label class="check-row"><input id="bodyShadowToggle" type="checkbox"> Körperschatten</label>
@@ -1227,6 +1174,37 @@
     </section>
   </div>
 
+  <div id="settingsOverlay" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <h2 id="settingsTitle">Einstellungen</h2>
+        <button id="closeSettingsButton" class="close-button" type="button" aria-label="Einstellungen schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="slider-row">
+          <div class="slider-head"><span>Passgeschwindigkeit</span><strong id="passSpeedValue">100%</strong></div>
+          <input id="passSpeed" type="range" min="60" max="160" step="10" value="100">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>Schattenlänge</span><strong id="lengthValue">520</strong></div>
+          <input id="shadowLength" type="range" min="280" max="760" step="20" value="520">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>Körperschattenbreite</span><strong id="bodyWidthValue">34</strong></div>
+          <input id="bodyWidth" type="range" min="18" max="76" step="2" value="34">
+        </div>
+        <div class="slider-row">
+          <div class="slider-head"><span>Armschattenbreite</span><strong id="armWidthValue">86</strong></div>
+          <input id="armWidth" type="range" min="44" max="150" step="2" value="86">
+        </div>
+        <div class="slider-row" id="lobHeightRow" hidden>
+          <div class="slider-head"><span>Bogenhöhe</span><strong id="lobHeightValue">180</strong></div>
+          <input id="lobHeight" type="range" min="90" max="280" step="10" value="180">
+        </div>
+      </div>
+    </section>
+  </div>
+
   <script>
     "use strict";
 
@@ -1257,6 +1235,9 @@
     const sportCommentOverlay = document.getElementById("sportCommentOverlay");
     const closeDidacticButton = document.getElementById("closeDidacticButton");
     const closeSportCommentButton = document.getElementById("closeSportCommentButton");
+    const settingsButton = document.getElementById("settingsButton");
+    const settingsOverlay = document.getElementById("settingsOverlay");
+    const closeSettingsButton = document.getElementById("closeSettingsButton");
     const exportButton = document.getElementById("exportButton");
     const resetButton = document.getElementById("resetButton");
     const statusPill = document.getElementById("statusPill");
@@ -2191,6 +2172,16 @@
       sportCommentButton.focus();
     }
 
+    function openSettingsOverlay() {
+      settingsOverlay.hidden = false;
+      closeSettingsButton.focus();
+    }
+
+    function closeSettingsOverlay() {
+      settingsOverlay.hidden = true;
+      settingsButton.focus();
+    }
+
     function getAnimationTarget(index) {
       const target = copyPositions(getPresetPlayers(index));
       const settings = copySettings(state.settings);
@@ -2645,8 +2636,10 @@
       animateButton.addEventListener("click", animateScene);
       didacticButton.addEventListener("click", openDidacticOverlay);
       sportCommentButton.addEventListener("click", openSportCommentOverlay);
+      settingsButton.addEventListener("click", openSettingsOverlay);
       closeDidacticButton.addEventListener("click", closeDidacticOverlay);
       closeSportCommentButton.addEventListener("click", closeSportCommentOverlay);
+      closeSettingsButton.addEventListener("click", closeSettingsOverlay);
       didacticOverlay.addEventListener("click", (event) => {
         if (event.target === didacticOverlay) {
           closeDidacticOverlay();
@@ -2655,6 +2648,11 @@
       sportCommentOverlay.addEventListener("click", (event) => {
         if (event.target === sportCommentOverlay) {
           closeSportCommentOverlay();
+        }
+      });
+      settingsOverlay.addEventListener("click", (event) => {
+        if (event.target === settingsOverlay) {
+          closeSettingsOverlay();
         }
       });
       exportButton.addEventListener("click", exportScreenshotPng);
@@ -2697,6 +2695,10 @@
 
       if (!sportCommentOverlay.hidden) {
         closeSportCommentOverlay();
+      }
+
+      if (!settingsOverlay.hidden) {
+        closeSettingsOverlay();
       }
     });
 
